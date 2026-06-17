@@ -381,6 +381,15 @@
 
   .td-name { font-weight: 700; color: var(--black); white-space: nowrap; }
 
+  .td-project { white-space: nowrap; }
+  .proj-pill {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    background: #eff3ff; color: var(--blue-mid);
+    padding: 3px 9px; border-radius: 20px; max-width: 180px;
+    overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+  }
+  .td-project-none { color: var(--gray-light); }
+
   .td-date { color: var(--gray-mid); white-space: nowrap; font-size: 12px; }
 
   .td-preview {
@@ -1069,6 +1078,9 @@
                 <th onclick="sortBy('fullName')" id="th-fullName">
                   Name <span class="sort-icon" id="sort-fullName">↕</span>
                 </th>
+                <th onclick="sortBy('projectName')" id="th-projectName">
+                  Project <span class="sort-icon" id="sort-projectName">↕</span>
+                </th>
                 <th onclick="sortBy('timestamp')" id="th-timestamp" class="sorted">
                   Submitted <span class="sort-icon" id="sort-timestamp">↓</span>
                 </th>
@@ -1079,7 +1091,7 @@
               </tr>
             </thead>
             <tbody id="table-body">
-              <tr><td colspan="6">
+              <tr><td colspan="7">
                 <div class="state-box"><div class="big-spinner"></div></div>
               </td></tr>
             </tbody>
@@ -1422,7 +1434,7 @@ function switchView(view) {
 // ── Load data ─────────────────────────────────────────────────────────────────
 function loadData() {
   document.getElementById('table-body').innerHTML =
-    '<tr><td colspan="6"><div class="state-box"><div class="big-spinner"></div></div></td></tr>';
+    '<tr><td colspan="7"><div class="state-box"><div class="big-spinner"></div></div></td></tr>';
   document.getElementById('table-footer-count').textContent = 'Loading…';
 
   var token = sessionStorage.getItem('cw4c_admin') || ADMIN_TOKEN;
@@ -1444,7 +1456,7 @@ function loadData() {
         ? 'Error: ' + err.message
         : 'Set ENDPOINT_URL at the top of this file to connect to your Apps Script backend.';
       document.getElementById('table-body').innerHTML =
-        '<tr><td colspan="6"><div class="state-box">' +
+        '<tr><td colspan="7"><div class="state-box">' +
         '<div class="state-icon">⚠️</div>' +
         '<div class="state-title">Could not load responses</div>' +
         '<div class="state-sub">' + msg + '</div>' +
@@ -1493,7 +1505,7 @@ function renderTable() {
 
   var tbody = document.getElementById('table-body');
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="state-box">' +
+    tbody.innerHTML = '<tr><td colspan="7"><div class="state-box">' +
       '<div class="state-icon">' + (allResponses.length ? '🔍' : '📭') + '</div>' +
       '<div class="state-title">' + (allResponses.length ? 'No results for "' + esc(q) + '"' : 'No responses yet') + '</div>' +
       '<div class="state-sub">' + (allResponses.length ? 'Try a different name.' : 'Responses will appear here once leaders submit the survey.') + '</div>' +
@@ -1502,6 +1514,7 @@ function renderTable() {
     tbody.innerHTML = filtered.map(function(r) {
       return '<tr onclick="openModal(' + r.rowId + ')">' +
         '<td class="td-name">' + esc(r.fullName || (r.first + ' ' + r.last)) + '</td>' +
+        '<td class="td-project">' + projectCell(r) + '</td>' +
         '<td class="td-date">' + fmtDate(r.timestamp) + '</td>' +
         '<td class="td-preview">' + esc(trunc(r.q1, 55)) + '</td>' +
         '<td class="td-preview">' + esc(trunc(r.q5, 55)) + '</td>' +
@@ -2439,6 +2452,11 @@ function stamp() {
 }
 function pad(n) { return n < 10 ? '0'+n : n; }
 function trunc(s, n) { return !s ? '' : s.length > n ? s.slice(0,n) + '…' : s; }
+function projectCell(r) {
+  var label = r.projectName || r.clientName || (r.projectSlug && String(r.projectSlug).trim()) || '';
+  if (!label) return '<span class="td-project-none">-</span>';
+  return '<span class="proj-pill">' + esc(label) + '</span>';
+}
 function esc(s) {
   return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
