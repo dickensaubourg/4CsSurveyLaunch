@@ -848,6 +848,55 @@
 
   .overall-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   @media (max-width: 760px) { .overall-grid { grid-template-columns: 1fr; } }
+
+  /* ── Now What ── */
+  .nowwhat-block { background: #fafbff; }
+  .nowwhat-outcome {
+    font-size: 14px; line-height: 1.65; color: var(--gray-dark);
+    background: #eff3ff; border-left: 3px solid var(--blue);
+    border-radius: 7px; padding: 13px 16px; margin: 6px 0 16px;
+  }
+  .nowwhat-outcome strong { color: var(--navy); }
+  .shift-head {
+    font-size: 13px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em; margin: 16px 0 8px;
+  }
+  .ft-grid { display: flex; flex-direction: column; gap: 6px; }
+  .ft-row {
+    display: grid; grid-template-columns: 1fr 24px 1fr; align-items: center;
+    gap: 8px; background: #fff; border: 1px solid var(--gray-light);
+    border-radius: 7px; padding: 9px 12px;
+  }
+  .ft-from { font-size: 13px; color: #92400e; font-style: italic; }
+  .ft-arrow { text-align: center; color: var(--gray-mid); font-weight: 700; }
+  .ft-to { font-size: 13px; color: #065f46; font-weight: 700; }
+  @media (max-width: 620px) { .ft-row { grid-template-columns: 1fr; } .ft-arrow { text-align: left; } }
+
+  .cg-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  .cg-table th {
+    background: var(--navy); color: #fff; text-align: left;
+    padding: 8px 10px; font-size: 11px; font-weight: 700;
+  }
+  .cg-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-light); vertical-align: top; }
+  .cg-table tr:nth-child(even) td { background: var(--off-white); }
+  .cg-dim { font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .cg-from { color: #9a3324; }
+  .cg-to { color: #1E7A46; }
+  .cg-consider { color: var(--gray-dark); }
+  .cg-rate { width: 150px; background: #fff !important; border-left: 1px solid var(--gray-light); }
+
+  /* ── Deliverables ── */
+  .deliverables-block { background: var(--off-white); }
+  .deliverables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  @media (max-width: 700px) { .deliverables-grid { grid-template-columns: 1fr; } }
+  .deliverable-card { background: #fff; border: 1px solid var(--gray-light); border-radius: 9px; padding: 13px 15px; }
+  .deliverable-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+  .deliverable-title { font-size: 14px; font-weight: 800; color: var(--navy); }
+  .deliverable-facing { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 20px; }
+  .facing-client { background: #ecfdf5; color: #047857; }
+  .facing-internal { background: #fef2f2; color: #b91c1c; }
+  .deliverable-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 6px; }
+  .deliverable-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -1512,6 +1561,12 @@ function buildAnalysisPrompt(selected) {
   lines.push('      that stands apart and is worth surfacing to the group.');
   lines.push('Then give a facilitator takeaway per section, and an overall roll-up.');
   lines.push('');
+  lines.push('CRITICAL — go beyond reporting. Reporting the findings is not enough; the client must DO or CHANGE something.');
+  lines.push('Produce a "Now What" that is action- and outcome-leading: the outcome to drive, the MINDSET shifts and');
+  lines.push('the BEHAVIOR shifts the team must make (as From → To pairs), and culture-gap guidance (per dimension,');
+  lines.push('what the team should think about for execution — prompts to work through, NOT proclamations or verdicts');
+  lines.push('about their culture) to discuss live with the client.');
+  lines.push('');
   lines.push('Use the facilitation framing for each section as your lens:');
   SECTIONS.forEach(function(s){
     lines.push('  ' + s.code + ' — ' + s.title + ' (' + s.sub + '): ' + s.facilitator);
@@ -1551,6 +1606,12 @@ function buildAnalysisPrompt(selected) {
   lines.push('    "strongestConvergence": ["...", ...],');
   lines.push('    "biggestDivergence": ["...", ...],');
   lines.push('    "watchItems": ["things the facilitator should raise live in the room", ...]');
+  lines.push('  },');
+  lines.push('  "nowWhat": {');
+  lines.push('    "outcome": "the action/outcome to drive — what changes if this works",');
+  lines.push('    "mindsetShifts": [{"from": "today\'s belief", "to": "the belief the strategy needs"}, ...],');
+  lines.push('    "behaviorShifts": [{"from": "today\'s observable behavior", "to": "the new observable behavior"}, ...],');
+  lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution — a prompt to work through, not a verdict about their culture"}, ...]');
   lines.push('  }');
   lines.push('}');
   lines.push('Every array may be empty if nothing qualifies, but include all keys. Keep quotes verbatim.');
@@ -1727,8 +1788,80 @@ function buildReportHtml(report, forExport) {
       '</div></div>';
   }
 
+  // Now What — action / outcome leading
+  if (d.nowWhat) {
+    var nw = d.nowWhat;
+    html += '<div class="report-block nowwhat-block">';
+    html += '<div class="report-section-title"><span class="report-section-name">Now What</span></div>';
+    html += '<div class="report-section-sub">Reporting the findings is not the work — changing how the team operates is.</div>';
+    if (nw.outcome) {
+      html += '<div class="nowwhat-outcome"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</div>';
+    }
+    if (nw.mindsetShifts && nw.mindsetShifts.length) {
+      html += '<div class="shift-head">The mindset shifts this requires</div>' + fromToGrid(nw.mindsetShifts);
+    }
+    if (nw.behaviorShifts && nw.behaviorShifts.length) {
+      html += '<div class="shift-head">The behavior shifts this requires</div>' + fromToGrid(nw.behaviorShifts);
+    }
+    if (nw.cultureGap && nw.cultureGap.length) {
+      html += '<div class="shift-head">The culture gap — what to think about for execution</div>';
+      html += '<div class="report-section-sub" style="margin-bottom:10px">Prompts to work through together — not verdicts about the culture. Decide where the team lands and a first step for each; this sets up the performance-culture conversation behind the plan.</div>';
+      html += cultureGapTable(nw.cultureGap);
+    }
+    html += '</div>';
+  }
+
+  // Facilitation deliverables generated from this analysis
+  if (!forExport) {
+    html += '<div class="report-block deliverables-block">' +
+      '<div class="report-section-title"><span class="report-section-name">Facilitation Deliverables</span></div>' +
+      '<div class="report-section-sub">This analysis is the source for the client session package. Generate these from the findings:</div>' +
+      '<div class="deliverables-grid">' +
+        deliverableCard('Findings Report', 'Word (.docx)', 'Client-facing', 'Color-coded C1–C4 findings, exec summary, roll-up, and the Now What.') +
+        deliverableCard('Facilitator Guide', 'Word (.docx)', 'Internal', 'Run-of-show, prompts per section, the Now What & culture-gap conversation.') +
+        deliverableCard('Leadership Deck', 'PowerPoint (.pptx)', 'Client-facing', 'Headline, a slide per C, decisions to resolve, shifts, and culture gap.') +
+        deliverableCard('Executive One-Page', 'Word (.docx)', 'Client-facing', 'Single-page synthesis: tensions, shifts, and next steps — OnePage-ready.') +
+      '</div>' +
+      '<div class="report-section-sub" style="margin-top:12px">Ask Claude in Cowork to “generate the 4C facilitation package from this analysis” to produce the branded files.</div>' +
+      '</div>';
+  }
+
   html += '</div>'; // report-body
   return '<div class="panel-card" id="report-card" style="overflow:visible">' + html + '</div>';
+}
+
+function fromToGrid(pairs) {
+  var rows = pairs.map(function(p){
+    return '<div class="ft-row">' +
+      '<div class="ft-from">' + esc(p.from || '') + '</div>' +
+      '<div class="ft-arrow">→</div>' +
+      '<div class="ft-to">' + esc(p.to || '') + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="ft-grid">' + rows + '</div>';
+}
+
+function cultureGapTable(rows) {
+  var trs = rows.map(function(r){
+    return '<tr>' +
+      '<td class="cg-dim">' + esc(r.dimension || '') + '</td>' +
+      '<td class="cg-consider">' + esc(r.consider || '') + '</td>' +
+      '<td class="cg-rate"></td>' +
+    '</tr>';
+  }).join('');
+  return '<table class="cg-table"><thead><tr>' +
+    '<th>Dimension</th><th>What to think about for execution</th><th>Where we land / first step</th>' +
+    '</tr></thead><tbody>' + trs + '</tbody></table>';
+}
+
+function deliverableCard(title, fmt, facing, desc) {
+  var facingCls = facing === 'Internal' ? 'facing-internal' : 'facing-client';
+  return '<div class="deliverable-card">' +
+    '<div class="deliverable-top"><span class="deliverable-title">' + esc(title) + '</span>' +
+    '<span class="deliverable-facing ' + facingCls + '">' + esc(facing) + '</span></div>' +
+    '<div class="deliverable-fmt">' + esc(fmt) + '</div>' +
+    '<div class="deliverable-desc">' + esc(desc) + '</div>' +
+  '</div>';
 }
 
 function findingBlock(cls, label, lis) {
