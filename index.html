@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Cardwell 4C Survey | Regions L&D</title>
+<title>The Cardwell 4C Survey</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
@@ -32,30 +32,73 @@
     min-height: 100vh;
   }
 
-  /* ── Site header ── */
+  /* ── Site header / banner ── */
   .site-header {
     background: var(--navy-dark);
-    padding: 0 32px;
-    height: 60px;
+    padding: 0 28px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 50;
+    overflow: hidden;
   }
 
-  .header-brand { display: flex; align-items: center; gap: 12px; }
+  /* Personalized overlay keeps the left side dark enough for the white Cardwell
+     logo + text regardless of the client's brand colors. */
+  .site-header.themed::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(8,15,45,0.60) 0%, rgba(8,15,45,0.22) 52%, rgba(8,15,45,0) 100%);
+    pointer-events: none;
+  }
+
+  .header-brand, .header-left { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
 
   .header-logo {
-    width: 38px; height: 38px;
+    width: 40px; height: 40px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
+  .header-logo svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
 
-  .header-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
-  .header-sub  { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 1px; }
-  .header-tag  { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; }
+  .header-divider {
+    width: 1px; height: 28px;
+    background: rgba(255,255,255,0.28);
+    display: none; flex-shrink: 0;
+  }
+
+  .client-logo-chip {
+    display: none;
+    background: #fff;
+    border-radius: 7px;
+    padding: 4px 9px;
+    height: 38px;
+    align-items: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    flex-shrink: 0;
+  }
+  .client-logo-chip img { max-height: 28px; max-width: 130px; display: block; }
+
+  .header-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.96); }
+  .header-sub  { font-size: 12px; color: rgba(255,255,255,0.62); margin-top: 1px; }
+  .site-header.themed .header-name,
+  .site-header.themed .header-sub { text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+  .header-tag  {
+    position: relative; z-index: 1;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(0,0,0,0.22); padding: 5px 11px; border-radius: 20px;
+  }
+
+  @media (max-width: 560px) {
+    .header-sub { display: none; }
+    .client-logo-chip img { max-width: 90px; }
+    .header-tag { display: none; }
+  }
 
   /* ── Page wrapper ── */
   .page { max-width: 760px; margin: 0 auto; padding: 36px 20px 100px; }
@@ -522,18 +565,20 @@
   var ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbwzXlTacI23nEX_J4fzYWhsiqXWzlHKYwAmmy_0j2QZFIxirR-T05C95IPsFHBYYw0A/exec';
 </script>
 
-<!-- ── Header ── -->
-<div class="site-header">
-  <div class="header-brand">
+<!-- ── Header / Banner (personalized per client when published) ── -->
+<div class="site-header" id="site-header">
+  <div class="header-left">
     <div class="header-logo">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 313.1408 262.5304" width="46" height="38" aria-label="Cardwell logo">
         <path fill="#ffffff" d="M75.6378,183.3854c-11.9523-13.3167-18.9947-30.4637-19.8322-48.3379-1.0436-22.2732,7.1502-43.3873,22.7974-59.0339,14.7579-14.7584,34.3794-22.8856,55.2507-22.8856,16.2503,0,31.7339,4.9423,44.7623,14.0924,1.5563,1.093,3.6392.969,4.9839-.3758l31.4705-31.4707c1.6474-1.6474,1.5317-4.421-.2907-5.8724C147.5776-24.022,39.2175-1.3273,6.9287,97.6075c-7.0645,21.6462-7.1796,45.1817-.1677,66.8449,20.8851,64.524,73.974,96.7654,127.0926,96.7654,28.6641,0,57.3345-9.4013,80.9278-28.1926,1.8218-1.451,1.937-4.2224.2902-5.8692l-31.4871-31.4872c-1.3414-1.3414-3.4208-1.4631-4.9751-.3755-31.5899,22.1042-75.9945,18.1489-102.9717-11.9079Z"/>
         <path fill="#ffffff" d="M307.2864,141.6265c5.7181-5.7239,5.7182-14.9981.0002-20.7221l-72.4052-72.4808c-1.5273-1.527-4.0031-1.527-5.5304,0l-31.153,31.1535c-1.5271,1.5271-1.5271,4.0031,0,5.5302l43.3919,43.3919c1.5271,1.5271,1.5271,4.003,0,5.5301l-43.5784,43.5786c-1.5272,1.5273-1.5272,4.0034,0,5.5307l31.1532,31.153c1.527,1.527,4.0031,1.527,5.5301,0l72.5914-72.6651Z"/>
       </svg>
     </div>
-    <div>
-      <div class="header-name">Cardwell Way — 4C Model</div>
-      <div class="header-sub">Regions L&D Leadership Survey</div>
+    <div class="header-divider" id="header-divider"></div>
+    <div class="client-logo-chip" id="client-logo-chip"><img id="client-logo-img" alt="Client logo"></div>
+    <div class="header-text">
+      <div class="header-name" id="header-name">Cardwell Way — 4C Model</div>
+      <div class="header-sub" id="header-sub">Leadership Alignment Survey</div>
     </div>
   </div>
   <div class="header-tag">Confidential</div>
@@ -658,6 +703,50 @@ var SECTIONS = [
 var ALL_QS = [];
 SECTIONS.forEach(function(s){ s.questions.forEach(function(q){ ALL_QS.push(q.id); }); });
 
+// Active client project (set by theming below); tags submissions.
+var PROJECT = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLIENT PERSONALIZATION (banner theming by URL slug)
+// ─────────────────────────────────────────────────────────────────────────────
+function getProjectSlug() {
+  var seg = (location.pathname || '').replace(/^\/+|\/+$/g, '').split('/')[0].toLowerCase();
+  if (seg === 'index.html' || seg === 'admin.html') seg = '';
+  if (!seg) {
+    try { seg = (new URLSearchParams(location.search).get('p') || '').toLowerCase(); } catch (e) {}
+  }
+  return seg;
+}
+
+function applyTheme(p) {
+  var h = document.getElementById('site-header');
+  h.classList.add('themed');
+  var c1 = p.color1 || '#254deb', c2 = p.color2 || '#00007b';
+  h.style.background = 'linear-gradient(135deg, ' + c1 + ' 0%, ' + c2 + ' 100%)';
+  if (p.projectName) document.getElementById('header-name').textContent = p.projectName;
+  document.getElementById('header-sub').textContent = p.clientName || '';
+  if (p.logo) {
+    var img = document.getElementById('client-logo-img');
+    img.src = p.logo;
+    document.getElementById('client-logo-chip').style.display = 'flex';
+    document.getElementById('header-divider').style.display = 'block';
+  }
+  if (p.projectName || p.clientName) {
+    document.title = (p.projectName || '4C Survey') + (p.clientName ? ' · ' + p.clientName : '');
+  }
+}
+
+(function loadProject() {
+  var slug = getProjectSlug();
+  if (!slug || !ENDPOINT_URL) return;
+  fetch(ENDPOINT_URL + '?action=getProject&slug=' + encodeURIComponent(slug))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j && j.success && j.project) { PROJECT = j.project; PROJECT.slug = slug; applyTheme(j.project); }
+    })
+    .catch(function(){});
+})();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BUILD TAB UI
 // ─────────────────────────────────────────────────────────────────────────────
@@ -751,7 +840,7 @@ function switchTab(idx) {
 // ─────────────────────────────────────────────────────────────────────────────
 // STORAGE
 // ─────────────────────────────────────────────────────────────────────────────
-function sKey(f, l) { return 'cw4c__' + f.trim().toLowerCase() + '_' + l.trim().toLowerCase(); }
+function sKey(f, l) { return 'cw4c__' + (getProjectSlug() || 'default') + '__' + f.trim().toLowerCase() + '_' + l.trim().toLowerCase(); }
 function curKey()   { return sKey(document.getElementById('first-name').value, document.getElementById('last-name').value); }
 function loadData(k){ try { return JSON.parse(localStorage.getItem(k)) || {}; } catch(e) { return {}; } }
 function saveData(k, d){ localStorage.setItem(k, JSON.stringify(d)); }
@@ -887,6 +976,10 @@ function submitSurvey() {
 
   var payload = { first: d.first, last: d.last, submittedAt: d.submittedAt };
   ALL_QS.forEach(function(q){ payload[q] = d[q]; });
+  // Tag the submission with the client project (if personalized)
+  var slug = getProjectSlug();
+  if (slug) payload.projectSlug = slug;
+  if (PROJECT) { payload.clientName = PROJECT.clientName || ''; payload.projectName = PROJECT.projectName || ''; }
 
   function showDone() {
     document.getElementById('done-name').textContent = d.first + ' ' + d.last;

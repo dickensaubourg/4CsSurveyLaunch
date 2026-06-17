@@ -897,6 +897,61 @@
   .facing-internal { background: #fef2f2; color: #b91c1c; }
   .deliverable-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 6px; }
   .deliverable-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.5; }
+
+  /* ── Projects view ── */
+  .url-line { font-size: 12px; color: var(--blue); font-weight: 700; margin: -8px 0 16px; word-break: break-all; }
+  .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .color-field { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .color-field input[type=color] {
+    width: 42px; height: 38px; border: 1.5px solid var(--gray-light); border-radius: 7px;
+    background: #fff; cursor: pointer; padding: 2px; flex-shrink: 0;
+  }
+  .color-hex { margin-bottom: 0 !important; text-transform: lowercase; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .logo-upload-btn {
+    background: #fff; border: 1.5px solid var(--gray-light); border-radius: 7px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; color: var(--navy);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .logo-upload-btn:hover { background: var(--off-white); border-color: var(--blue); }
+  .logo-name { font-size: 12px; color: var(--gray-mid); }
+  .proj-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 6px; }
+
+  /* Banner preview (mirrors the survey banner) */
+  .banner-preview {
+    position: relative; overflow: hidden;
+    height: 64px; border-radius: 9px;
+    background: var(--navy-dark);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+  }
+  .bp-overlay { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .banner-preview.themed .bp-overlay {
+    display: block;
+    background: linear-gradient(90deg, rgba(8,15,45,0.60) 0%, rgba(8,15,45,0.22) 52%, rgba(8,15,45,0) 100%);
+  }
+  .bp-left { display: flex; align-items: center; gap: 11px; position: relative; z-index: 1; }
+  .bp-cardwell svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); display: block; }
+  .bp-divider { width: 1px; height: 26px; background: rgba(255,255,255,0.28); display: none; }
+  .bp-logo-chip { display: none; background: #fff; border-radius: 6px; padding: 4px 8px; height: 34px; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+  .bp-logo-chip img { max-height: 26px; max-width: 110px; display: block; }
+  .bp-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .bp-sub { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+  .banner-preview.themed .bp-name, .banner-preview.themed .bp-sub { text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  .bp-tag { position: relative; z-index: 1; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.22); padding: 4px 9px; border-radius: 20px; }
+  .preview-note { font-size: 12px; color: var(--gray-mid); margin-top: 10px; line-height: 1.5; }
+
+  /* Project list rows */
+  .proj-row { display: flex; align-items: center; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--gray-light); }
+  .proj-row:last-child { border-bottom: none; }
+  .proj-swatch { width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.08); }
+  .proj-info { flex: 1; min-width: 0; }
+  .proj-title { font-size: 13px; font-weight: 700; color: var(--black); }
+  .proj-meta { font-size: 11px; color: var(--gray-mid); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-status { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 9px; border-radius: 20px; }
+  .proj-status.published { background: #ecfdf5; color: #047857; }
+  .proj-status.draft { background: #fef3c7; color: #b45309; }
+  .proj-row-actions { display: flex; gap: 4px; }
 </style>
 </head>
 <body>
@@ -905,6 +960,7 @@
 <script>
   var ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbwzXlTacI23nEX_J4fzYWhsiqXWzlHKYwAmmy_0j2QZFIxirR-T05C95IPsFHBYYw0A/exec';               // ← paste your Apps Script Web App URL
   var ADMIN_TOKEN  = 'Cardwell4Cs'; // ← must match ADMIN_TOKEN in LD_Backend.gs
+  var SURVEY_BASE_URL = 'https://4csurvey.cardwellgroup.com'; // ← your survey domain (no trailing slash)
 </script>
 
 <!-- ── TOPBAR ── -->
@@ -920,6 +976,7 @@
     <div class="topbar-divider"></div>
     <div class="topbar-sub">Admin Dashboard</div>
     <div class="view-nav" id="view-nav">
+      <button class="view-nav-btn" id="nav-projects" onclick="switchView('projects')">Projects</button>
       <button class="view-nav-btn active" id="nav-responses" onclick="switchView('responses')">Responses</button>
       <button class="view-nav-btn" id="nav-analysis" onclick="switchView('analysis')">Analysis</button>
     </div>
@@ -1105,6 +1162,108 @@
       </div>
     </div><!-- /view-analysis -->
 
+    <!-- ─────────── PROJECTS VIEW (master controller) ─────────── -->
+    <div class="view" id="view-projects">
+      <div class="toolbar">
+        <span class="toolbar-title">Client Projects</span>
+        <div class="toolbar-right">
+          <button class="btn-action btn-ghost-sm" onclick="loadProjects()">↺ Refresh</button>
+          <button class="btn-action btn-primary-sm" onclick="newProject()">+ New project</button>
+        </div>
+      </div>
+
+      <div class="analysis-grid">
+        <!-- LEFT: editor -->
+        <div class="sticky-side">
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <span class="panel-card-title" id="proj-editor-title">New project</span>
+            </div>
+            <div class="panel-card-body">
+              <label class="cfg-label" for="pf-client">Client name</label>
+              <input type="text" class="cfg-input" id="pf-client" placeholder="e.g. Regions Bank" oninput="onProjFieldInput()">
+
+              <label class="cfg-label" for="pf-project">Project name</label>
+              <input type="text" class="cfg-input" id="pf-project" placeholder="e.g. L&amp;D Leadership Alignment" oninput="onProjFieldInput()">
+
+              <label class="cfg-label" for="pf-slug">Custom URL slug</label>
+              <input type="text" class="cfg-input" id="pf-slug" placeholder="regions" oninput="onSlugInput()">
+              <div class="url-line" id="pf-url-line"></div>
+
+              <div class="color-row">
+                <div>
+                  <label class="cfg-label">Brand color 1</label>
+                  <div class="color-field">
+                    <input type="color" id="pf-color1" value="#254deb" oninput="onColorInput('1')">
+                    <input type="text" class="cfg-input color-hex" id="pf-color1-hex" value="#254deb" oninput="onHexInput('1')">
+                  </div>
+                </div>
+                <div>
+                  <label class="cfg-label">Brand color 2</label>
+                  <div class="color-field">
+                    <input type="color" id="pf-color2" value="#00007b" oninput="onColorInput('2')">
+                    <input type="text" class="cfg-input color-hex" id="pf-color2-hex" value="#00007b" oninput="onHexInput('2')">
+                  </div>
+                </div>
+              </div>
+
+              <label class="cfg-label">Client logo (PNG or JPG)</label>
+              <div class="logo-row">
+                <label class="logo-upload-btn">
+                  <input type="file" id="pf-logo" accept="image/png,image/jpeg,image/svg+xml" onchange="onLogoFile(event)" hidden>
+                  Choose file…
+                </label>
+                <button class="link-btn" id="pf-logo-clear" onclick="clearLogo()" style="display:none">Remove</button>
+                <span class="logo-name" id="pf-logo-name">No logo — Cardwell mark only</span>
+              </div>
+
+              <div class="run-error" id="proj-error"></div>
+
+              <div class="proj-actions">
+                <button class="btn-action btn-ghost-sm" onclick="saveProject('draft')">Save draft</button>
+                <button class="btn-run" id="pf-publish" style="width:auto;padding:11px 20px" onclick="saveProject('published')">Publish</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: preview + list -->
+        <div>
+          <div class="panel-card" style="margin-bottom:18px">
+            <div class="panel-card-head"><span class="panel-card-title">Live banner preview</span></div>
+            <div class="panel-card-body">
+              <div class="banner-preview" id="banner-preview">
+                <div class="bp-overlay" id="bp-overlay"></div>
+                <div class="bp-left">
+                  <div class="bp-cardwell">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 313.1408 262.5304" width="40" height="33" aria-label="Cardwell logo">
+                      <path fill="#ffffff" d="M75.6378,183.3854c-11.9523-13.3167-18.9947-30.4637-19.8322-48.3379-1.0436-22.2732,7.1502-43.3873,22.7974-59.0339,14.7579-14.7584,34.3794-22.8856,55.2507-22.8856,16.2503,0,31.7339,4.9423,44.7623,14.0924,1.5563,1.093,3.6392.969,4.9839-.3758l31.4705-31.4707c1.6474-1.6474,1.5317-4.421-.2907-5.8724C147.5776-24.022,39.2175-1.3273,6.9287,97.6075c-7.0645,21.6462-7.1796,45.1817-.1677,66.8449,20.8851,64.524,73.974,96.7654,127.0926,96.7654,28.6641,0,57.3345-9.4013,80.9278-28.1926,1.8218-1.451,1.937-4.2224.2902-5.8692l-31.4871-31.4872c-1.3414-1.3414-3.4208-1.4631-4.9751-.3755-31.5899,22.1042-75.9945,18.1489-102.9717-11.9079Z"/>
+                      <path fill="#ffffff" d="M307.2864,141.6265c5.7181-5.7239,5.7182-14.9981.0002-20.7221l-72.4052-72.4808c-1.5273-1.527-4.0031-1.527-5.5304,0l-31.153,31.1535c-1.5271,1.5271-1.5271,4.0031,0,5.5302l43.3919,43.3919c1.5271,1.5271,1.5271,4.003,0,5.5301l-43.5784,43.5786c-1.5272,1.5273-1.5272,4.0034,0,5.5307l31.1532,31.153c1.527,1.527,4.0031,1.527,5.5301,0l72.5914-72.6651Z"/>
+                    </svg>
+                  </div>
+                  <div class="bp-divider" id="bp-divider"></div>
+                  <div class="bp-logo-chip" id="bp-logo-chip"><img id="bp-logo-img" alt=""></div>
+                  <div class="bp-text">
+                    <div class="bp-name" id="bp-name">Cardwell Way — 4C Model</div>
+                    <div class="bp-sub" id="bp-sub">Leadership Alignment Survey</div>
+                  </div>
+                </div>
+                <div class="bp-tag">Confidential</div>
+              </div>
+              <div class="preview-note">This is exactly what the client leader sees at the top of their survey. The left side stays legible on any colors.</div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-card-head"><span class="panel-card-title">All projects</span></div>
+            <div id="projects-list">
+              <div class="state-box" style="padding:40px 20px"><div class="big-spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-projects -->
+
   </div>
 </div>
 
@@ -1221,11 +1380,12 @@ function logout() {
 // ── View switching ─────────────────────────────────────────────────────────────
 function switchView(view) {
   currentView = view;
-  document.getElementById('view-responses').classList.toggle('active', view === 'responses');
-  document.getElementById('view-analysis').classList.toggle('active', view === 'analysis');
-  document.getElementById('nav-responses').classList.toggle('active', view === 'responses');
-  document.getElementById('nav-analysis').classList.toggle('active', view === 'analysis');
+  ['responses','analysis','projects'].forEach(function(v){
+    var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
+    var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
+  });
   if (view === 'analysis') renderSelectList();
+  if (view === 'projects') loadProjects();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1889,6 +2049,216 @@ function downloadReport() {
   a.download = 'Cardwell_4C_Analysis_' + stamp() + '.html';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PROJECTS — master controller (create / preview / publish personalized surveys)
+// ══════════════════════════════════════════════════════════════════════════════
+var projLogo = '';            // current logo dataURL in the editor
+var projSlugEdited = false;
+var allProjects = [];
+
+function projToken() { return sessionStorage.getItem('cw4c_admin') || ADMIN_TOKEN; }
+function slugify(s) { return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+
+function newProject() {
+  document.getElementById('proj-editor-title').textContent = 'New project';
+  document.getElementById('pf-client').value = '';
+  document.getElementById('pf-project').value = '';
+  document.getElementById('pf-slug').value = '';
+  setColor('1', '#254deb'); setColor('2', '#00007b');
+  clearLogo();
+  projSlugEdited = false;
+  document.getElementById('proj-error').style.display = 'none';
+  updatePreview(); updateUrlLine();
+}
+
+function setColor(n, hex) {
+  document.getElementById('pf-color' + n).value = hex;
+  document.getElementById('pf-color' + n + '-hex').value = hex;
+}
+function onColorInput(n) {
+  document.getElementById('pf-color' + n + '-hex').value = document.getElementById('pf-color' + n).value;
+  updatePreview();
+}
+function onHexInput(n) {
+  var v = document.getElementById('pf-color' + n + '-hex').value.trim();
+  if (/^#?[0-9a-fA-F]{6}$/.test(v)) { if (v[0] !== '#') v = '#' + v; document.getElementById('pf-color' + n).value = v; updatePreview(); }
+}
+function onProjFieldInput() {
+  if (!projSlugEdited) {
+    var base = document.getElementById('pf-project').value || document.getElementById('pf-client').value;
+    document.getElementById('pf-slug').value = slugify(base);
+  }
+  updatePreview(); updateUrlLine();
+}
+function onSlugInput() {
+  projSlugEdited = true;
+  document.getElementById('pf-slug').value = slugify(document.getElementById('pf-slug').value);
+  updateUrlLine();
+}
+function updateUrlLine() {
+  var slug = document.getElementById('pf-slug').value;
+  document.getElementById('pf-url-line').textContent = slug ? (SURVEY_BASE_URL + '/' + slug) : 'Add a name to generate the URL';
+}
+
+function onLogoFile(e) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    if (file.type === 'image/svg+xml') { projLogo = ev.target.result; afterLogo(file.name); return; }
+    var img = new Image();
+    img.onload = function() {
+      var maxH = 64, maxW = 260, scale = Math.min(maxH / img.height, maxW / img.width, 1);
+      var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var url = canvas.toDataURL('image/png');
+      if (url.length > 45000) {
+        var q = 0.85;
+        url = canvas.toDataURL('image/jpeg', q);
+        while (url.length > 45000 && q > 0.3) { q -= 0.1; url = canvas.toDataURL('image/jpeg', q); }
+      }
+      projLogo = url; afterLogo(file.name);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function afterLogo(name) {
+  document.getElementById('pf-logo-name').textContent = name;
+  document.getElementById('pf-logo-clear').style.display = 'inline';
+  updatePreview();
+}
+function clearLogo() {
+  projLogo = ''; document.getElementById('pf-logo').value = '';
+  document.getElementById('pf-logo-name').textContent = 'No logo — Cardwell mark only';
+  document.getElementById('pf-logo-clear').style.display = 'none';
+  updatePreview();
+}
+
+function updatePreview() {
+  var c1 = document.getElementById('pf-color1').value, c2 = document.getElementById('pf-color2').value;
+  var client = document.getElementById('pf-client').value.trim();
+  var project = document.getElementById('pf-project').value.trim();
+  var bp = document.getElementById('banner-preview');
+  var themed = !!(client || project || projLogo);
+  bp.classList.toggle('themed', themed);
+  bp.style.background = themed ? ('linear-gradient(135deg, ' + c1 + ' 0%, ' + c2 + ' 100%)') : '';
+  document.getElementById('bp-name').textContent = project || 'Cardwell Way — 4C Model';
+  document.getElementById('bp-sub').textContent = client || 'Leadership Alignment Survey';
+  if (projLogo) {
+    document.getElementById('bp-logo-img').src = projLogo;
+    document.getElementById('bp-logo-chip').style.display = 'flex';
+    document.getElementById('bp-divider').style.display = 'block';
+  } else {
+    document.getElementById('bp-logo-chip').style.display = 'none';
+    document.getElementById('bp-divider').style.display = 'none';
+  }
+}
+
+function showProjErr(m) { var e = document.getElementById('proj-error'); e.textContent = m; e.style.display = 'block'; }
+
+function saveProject(status) {
+  var client = document.getElementById('pf-client').value.trim();
+  var project = document.getElementById('pf-project').value.trim();
+  var slug = slugify(document.getElementById('pf-slug').value);
+  document.getElementById('proj-error').style.display = 'none';
+  if (!client && !project) { showProjErr('Enter a client name and project name.'); return; }
+  if (!slug) { showProjErr('Enter a URL slug (letters, numbers, hyphens).'); return; }
+
+  var payload = { type: 'project', token: projToken(), project: {
+    slug: slug, clientName: client, projectName: project,
+    color1: document.getElementById('pf-color1').value,
+    color2: document.getElementById('pf-color2').value,
+    logo: projLogo, status: status
+  }};
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success) throw new Error(j.error || 'Save failed');
+      loadProjects();
+      if (status === 'published') {
+        alert('Published!\n\nClient URL:\n' + SURVEY_BASE_URL + '/' + j.slug + '\n\nSend this to the client. (Custom paths require the one-time vercel.json rewrite — see deploy notes.)');
+      } else {
+        showProjErr(''); document.getElementById('proj-error').style.display = 'none';
+      }
+    })
+    .catch(function(e){ showProjErr(e.message); });
+}
+
+function loadProjects() {
+  var el = document.getElementById('projects-list');
+  el.innerHTML = '<div class="state-box" style="padding:40px 20px"><div class="big-spinner"></div></div>';
+  fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success) throw new Error(j.error || 'Failed to load');
+      allProjects = j.projects || [];
+      renderProjects();
+    })
+    .catch(function(e){
+      el.innerHTML = '<div class="state-box"><div class="state-icon">⚠️</div>' +
+        '<div class="state-title">Could not load projects</div>' +
+        '<div class="state-sub">' + esc(e.message) + '</div></div>';
+    });
+}
+
+function renderProjects() {
+  var el = document.getElementById('projects-list');
+  if (!allProjects.length) {
+    el.innerHTML = '<div class="state-box" style="padding:48px 20px"><div class="state-icon">📂</div>' +
+      '<div class="state-title">No projects yet</div>' +
+      '<div class="state-sub">Create one to generate a personalized survey URL.</div></div>';
+    return;
+  }
+  el.innerHTML = allProjects.map(function(p){
+    var url = SURVEY_BASE_URL + '/' + p.slug;
+    var st = p.status === 'published' ? 'published' : 'draft';
+    return '<div class="proj-row">' +
+      '<div class="proj-swatch" style="background:linear-gradient(135deg,' + (p.color1||'#254deb') + ',' + (p.color2||'#00007b') + ')"></div>' +
+      '<div class="proj-info"><div class="proj-title">' + esc(p.projectName || p.slug) + '</div>' +
+      '<div class="proj-meta">' + esc(p.clientName || '') + ' · ' + esc(url) + '</div></div>' +
+      '<span class="proj-status ' + st + '">' + (st === 'published' ? 'Published' : 'Draft') + '</span>' +
+      '<div class="proj-row-actions">' +
+        '<button class="btn-icon" title="Edit" onclick="editProject(\'' + esc(p.slug) + '\')">✎</button>' +
+        '<button class="btn-icon" title="Copy URL" onclick="copyProjUrl(\'' + esc(p.slug) + '\')">🔗</button>' +
+        '<button class="btn-icon danger" title="Delete" onclick="deleteProject(\'' + esc(p.slug) + '\')">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function editProject(slug) {
+  var p = allProjects.find(function(x){ return x.slug === slug; }); if (!p) return;
+  document.getElementById('proj-editor-title').textContent = 'Edit: ' + (p.projectName || p.slug);
+  document.getElementById('pf-client').value = p.clientName || '';
+  document.getElementById('pf-project').value = p.projectName || '';
+  document.getElementById('pf-slug').value = p.slug; projSlugEdited = true;
+  setColor('1', p.color1 || '#254deb'); setColor('2', p.color2 || '#00007b');
+  projLogo = p.logo || '';
+  if (projLogo) { document.getElementById('pf-logo-name').textContent = 'Current logo'; document.getElementById('pf-logo-clear').style.display = 'inline'; }
+  else { document.getElementById('pf-logo-name').textContent = 'No logo — Cardwell mark only'; document.getElementById('pf-logo-clear').style.display = 'none'; }
+  document.getElementById('proj-error').style.display = 'none';
+  updatePreview(); updateUrlLine();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function copyProjUrl(slug) {
+  var url = SURVEY_BASE_URL + '/' + slug;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function(){ alert('Copied:\n' + url); }).catch(function(){ prompt('Copy URL:', url); });
+  } else { prompt('Copy URL:', url); }
+}
+
+function deleteProject(slug) {
+  var p = allProjects.find(function(x){ return x.slug === slug; });
+  var name = p ? (p.projectName || p.slug) : slug;
+  if (!confirm('Delete project "' + name + '"? The custom URL will stop working. (Survey responses are NOT deleted.)')) return;
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ type: 'deleteProject', token: projToken(), slug: slug }) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.success) throw new Error(j.error); loadProjects(); })
+    .catch(function(e){ alert('Delete failed: ' + e.message); });
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
