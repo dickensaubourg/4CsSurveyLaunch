@@ -142,6 +142,15 @@
 
   .intro-body { font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.65; max-width: 520px; }
 
+  .intro-steps { margin-top: 22px; display: flex; flex-direction: column; gap: 13px; max-width: 540px; }
+  .intro-step { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: rgba(255,255,255,0.92); line-height: 1.55; }
+  .intro-step b { font-weight: 700; color: #fff; }
+  .intro-step-ic {
+    flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .intro-step-ic svg { width: 16px; height: 16px; fill: #fff; }
+
   .name-card {
     background: #fff; border-radius: var(--radius);
     box-shadow: 0 2px 12px rgba(0,0,0,0.07); padding: 32px 36px;
@@ -233,7 +242,7 @@
   .btn-clear:hover { color: #dc2626; }
 
   /* ══════════════════════════════════════
-     SURVEY SCREEN — PROGRESS TRACKER
+     SURVEY SCREEN · PROGRESS TRACKER
   ══════════════════════════════════════ */
   .progress-card {
     background: #fff; border-radius: var(--radius);
@@ -577,7 +586,7 @@
     <div class="header-divider" id="header-divider"></div>
     <div class="client-logo-chip" id="client-logo-chip"><img id="client-logo-img" alt="Client logo"></div>
     <div class="header-text">
-      <div class="header-name" id="header-name">Cardwell Way — 4C Model</div>
+      <div class="header-name" id="header-name">Cardwell Way · 4C Model</div>
       <div class="header-sub" id="header-sub">Leadership Alignment Survey</div>
     </div>
   </div>
@@ -589,9 +598,23 @@
 <!-- ══════════════ NAME ══════════════ -->
 <div class="screen active" id="screen-name">
   <div class="intro-hero">
-    <div class="intro-eyebrow">The Cardwell Way — 4C Model</div>
+    <div class="intro-eyebrow">The Cardwell Way · 4C Model</div>
     <div class="intro-title">Leadership Alignment Survey</div>
-    <div class="intro-body">Twelve questions across Clarity, Choices, Commitments, and Cadence. Answers save automatically — close the browser and pick up exactly where you left off.</div>
+    <div class="intro-body">Twelve short questions across Clarity, Choices, Commitments, and Cadence. There are no right answers; we want your honest perspective.</div>
+    <div class="intro-steps">
+      <div class="intro-step">
+        <span class="intro-step-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 6V3L7.5 7.5 12 12V9a4 4 0 1 1-4 4H6a6 6 0 1 0 6-7z"/></svg>
+        </span>
+        <span><b>Your answers are saved automatically.</b> To pick up where you left off, just re-enter your name on this screen.</span>
+      </div>
+      <div class="intro-step">
+        <span class="intro-step-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 8a7 7 0 0 0 13.97.5H21a9 9 0 0 1-8 8.94V22h-2v-1.06A9 9 0 0 1 3 13H5z"/></svg>
+        </span>
+        <span><b>Prefer to talk?</b> Select the microphone icon on any question to share your response by voice. Speak naturally.</span>
+      </div>
+    </div>
   </div>
   <div class="name-card">
     <div class="card-title">Let's get started</div>
@@ -617,7 +640,7 @@
   <!-- Progress tracker (always visible) -->
   <div class="progress-card">
     <div class="progress-text">
-      <div class="progress-label">Overall Progress — <span id="survey-name-display"></span></div>
+      <div class="progress-label">Overall Progress · <span id="survey-name-display"></span></div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progress-bar"></div>
       </div>
@@ -985,7 +1008,7 @@ function submitSurvey() {
     document.getElementById('done-name').textContent = d.first + ' ' + d.last;
     var html = '';
     SECTIONS.forEach(function(s) {
-      html += '<div class="done-section-hd"><div class="done-dot"></div>' + s.code + ' — ' + s.title + '</div>';
+      html += '<div class="done-section-hd"><div class="done-dot"></div>' + s.code + ' · ' + s.title + '</div>';
       s.questions.forEach(function(q) {
         html += '<div class="done-q">' +
           '<div class="done-q-lbl">' + q.num + '</div>' +

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — 4C Survey | Regions L&D</title>
+<title>Admin · 4C Survey</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
@@ -647,6 +647,20 @@
   .sticky-side { position: sticky; top: 80px; }
 
   /* Selection list */
+  .proj-filter-row {
+    padding: 12px 20px 4px;
+  }
+  .proj-filter-label {
+    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--gray-mid); margin-bottom: 6px;
+  }
+  .select-group-hd {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 20px; background: var(--navy-dark);
+    position: sticky; top: 0; z-index: 1;
+  }
+  .select-group-name { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; }
+  .select-group-actions .link-btn { color: var(--blue-light); }
   .select-toolbar {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 20px;
@@ -990,7 +1004,7 @@
 <!-- ══ LOGIN ══ -->
 <div id="screen-login">
   <div class="login-card">
-    <div class="login-eyebrow">The Cardwell Way — 4C Model</div>
+    <div class="login-eyebrow">The Cardwell Way · 4C Model</div>
     <div class="login-title">Admin Access</div>
     <div class="login-sub">Enter your admin passphrase to view, manage, and analyze survey responses.</div>
     <div class="field">
@@ -1014,22 +1028,22 @@
       <div class="stats-row">
         <div class="stat-card accent">
           <div class="stat-label">Total Responses</div>
-          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-value" id="stat-total">-</div>
           <div class="stat-sub">submitted</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Most Recent</div>
-          <div class="stat-value" id="stat-recent" style="font-size:18px;margin-top:6px">—</div>
-          <div class="stat-sub" id="stat-recent-name">—</div>
+          <div class="stat-value" id="stat-recent" style="font-size:18px;margin-top:6px">-</div>
+          <div class="stat-sub" id="stat-recent-name">-</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Avg Words / Answer</div>
-          <div class="stat-value" id="stat-avg">—</div>
+          <div class="stat-value" id="stat-avg">-</div>
           <div class="stat-sub">across 12 questions</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Last Refreshed</div>
-          <div class="stat-value" id="stat-refreshed" style="font-size:18px;margin-top:6px">—</div>
+          <div class="stat-value" id="stat-refreshed" style="font-size:18px;margin-top:6px">-</div>
           <div class="stat-sub">click refresh to update</div>
         </div>
       </div>
@@ -1058,8 +1072,8 @@
                 <th onclick="sortBy('timestamp')" id="th-timestamp" class="sorted">
                   Submitted <span class="sort-icon" id="sort-timestamp">↓</span>
                 </th>
-                <th>C1 — Q1 Preview</th>
-                <th>C2 — Q5 Preview</th>
+                <th>C1 · Q1 Preview</th>
+                <th>C2 · Q5 Preview</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -1095,8 +1109,14 @@
             <div class="panel-card-head">
               <span class="panel-card-title">1 · Select Responses</span>
             </div>
+            <div class="proj-filter-row">
+              <label class="proj-filter-label" for="proj-filter">Client / project</label>
+              <select class="cfg-select" id="proj-filter" style="margin-bottom:0" onchange="onProjFilterChange()">
+                <option value="__all">All projects</option>
+              </select>
+            </div>
             <div class="select-toolbar">
-              <button class="link-btn" onclick="selectAllResp(true)">Select all</button>
+              <button class="link-btn" onclick="selectAllResp(true)">Select all shown</button>
               <button class="link-btn" onclick="selectAllResp(false)">Clear</button>
               <span class="select-count" id="select-count">0 selected</span>
             </div>
@@ -1124,9 +1144,9 @@
 
               <label class="cfg-label" for="model-select">Model</label>
               <select class="cfg-select" id="model-select">
-                <option value="claude-opus-4-8">Claude Opus 4.8 — deepest analysis</option>
-                <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — balanced (recommended)</option>
-                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest</option>
+                <option value="claude-opus-4-8">Claude Opus 4.8 · deepest analysis</option>
+                <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 · balanced (recommended)</option>
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 · fastest</option>
               </select>
 
               <button class="btn-run" id="btn-run" onclick="runAnalysis()" disabled>
@@ -1144,6 +1164,16 @@
                 Paste it into Claude or this Cowork session to run the deep analysis there.</div>
             </div>
           </div>
+
+          <div class="panel-card" style="margin-top:18px">
+            <div class="panel-card-head">
+              <span class="panel-card-title">Saved analyses</span>
+              <button class="link-btn" onclick="loadSavedAnalyses()">↺ Refresh</button>
+            </div>
+            <div id="saved-analyses-list">
+              <div class="state-box" style="padding:30px 20px"><div class="state-sub">Run an analysis, then Save it to keep it here.</div></div>
+            </div>
+          </div>
         </div>
 
         <!-- RIGHT: report -->
@@ -1153,8 +1183,8 @@
               <div class="state-icon">✦</div>
               <div class="state-title">No analysis yet</div>
               <div class="state-sub">Select the responses you want to analyze, add your API key,
-                and run the engine. Findings are organized by the 4Cs — alignment, divergence,
-                and standout perspectives — using your facilitation framing.</div>
+                and run the engine. Findings are organized by the 4Cs: alignment, divergence,
+                and standout perspectives, using your facilitation framing.</div>
             </div>
           </div>
         </div>
@@ -1214,7 +1244,7 @@
                   Choose file…
                 </label>
                 <button class="link-btn" id="pf-logo-clear" onclick="clearLogo()" style="display:none">Remove</button>
-                <span class="logo-name" id="pf-logo-name">No logo — Cardwell mark only</span>
+                <span class="logo-name" id="pf-logo-name">No logo, Cardwell mark only</span>
               </div>
 
               <div class="run-error" id="proj-error"></div>
@@ -1244,7 +1274,7 @@
                   <div class="bp-divider" id="bp-divider"></div>
                   <div class="bp-logo-chip" id="bp-logo-chip"><img id="bp-logo-img" alt=""></div>
                   <div class="bp-text">
-                    <div class="bp-name" id="bp-name">Cardwell Way — 4C Model</div>
+                    <div class="bp-name" id="bp-name">Cardwell Way · 4C Model</div>
                     <div class="bp-sub" id="bp-sub">Leadership Alignment Survey</div>
                   </div>
                 </div>
@@ -1290,7 +1320,7 @@
 var SECTIONS = [
   {
     code: 'C1', title: 'Clarity', sub: 'Why We Exist and Where We Are Going',
-    facilitator: 'These questions surface whether the team shares a definition of purpose, customer and winning. Divergence here is the most important finding — it means the group is not yet operating from the same north star.',
+    facilitator: 'These questions surface whether the team shares a definition of purpose, customer and winning. Divergence here is the most important finding. It means the group is not yet operating from the same north star.',
     questions: [
       { id: 'q1',  num: 'Q1',  text: 'In your own words, why does the Regions L&D function exist?' },
       { id: 'q2',  num: 'Q2',  text: 'Who is our primary customer?' },
@@ -1384,7 +1414,7 @@ function switchView(view) {
     var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
     var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
   });
-  if (view === 'analysis') renderSelectList();
+  if (view === 'analysis') { renderSelectList(); loadSavedAnalyses(); }
   if (view === 'projects') loadProjects();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1419,7 +1449,7 @@ function loadData() {
         '<div class="state-title">Could not load responses</div>' +
         '<div class="state-sub">' + msg + '</div>' +
         '</div></td></tr>';
-      document.getElementById('table-footer-count').textContent = '—';
+      document.getElementById('table-footer-count').textContent = '-';
     });
 }
 
@@ -1428,13 +1458,13 @@ function updateStats() {
   document.getElementById('stat-total').textContent = allResponses.length;
   if (!allResponses.length) {
     ['stat-recent','stat-recent-name','stat-avg'].forEach(function(id){
-      document.getElementById(id).textContent = '—';
+      document.getElementById(id).textContent = '-';
     });
     return;
   }
   var sorted = allResponses.slice().sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
   document.getElementById('stat-recent').textContent      = fmtDate(sorted[0].timestamp);
-  document.getElementById('stat-recent-name').textContent = sorted[0].fullName || '—';
+  document.getElementById('stat-recent-name').textContent = sorted[0].fullName || '-';
 
   var totalWords = allResponses.reduce(function(acc, r) {
     return acc + ALL_QS.reduce(function(a, q) { return a + wc(r[q.id]); }, 0);
@@ -1513,7 +1543,7 @@ function openModal(rowId) {
     html += '<div class="modal-section-header">' +
       '<span class="modal-section-code">' + s.code + '</span>' +
       '<span class="modal-section-name">' + s.title + '</span>' +
-      '<span class="modal-section-sub"> — ' + s.sub + '</span>' +
+      '<span class="modal-section-sub"> - ' + s.sub + '</span>' +
       '</div>';
     s.questions.forEach(function(q) {
       var ans = (r[q.id] || '').trim() || '(no answer)';
@@ -1595,10 +1625,62 @@ function exportCSV() {
 // ANALYSIS ENGINE
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ── Selection list ──────────────────────────────────────────────────────────
+// ── Selection list (grouped / filtered by project) ─────────────────────────────
+var currentProjFilter = '__all';
+
+function projKeyOf(r) { return (r.projectSlug && String(r.projectSlug).trim()) ? String(r.projectSlug).trim() : '__none'; }
+function projLabelOf(r) { return r.projectName || r.clientName || (r.projectSlug && String(r.projectSlug).trim()) || 'No project (legacy)'; }
+
+function distinctProjects() {
+  var map = {};
+  allResponses.forEach(function(r){ var k = projKeyOf(r); if (!map[k]) map[k] = projLabelOf(r); });
+  return map;
+}
+function sortedProjKeys(map) {
+  return Object.keys(map).sort(function(a,b){
+    if (a === '__none') return 1; if (b === '__none') return -1;
+    return map[a].toLowerCase() < map[b].toLowerCase() ? -1 : 1;
+  });
+}
+
+function populateProjFilter() {
+  var sel = document.getElementById('proj-filter'); if (!sel) return;
+  var map = distinctProjects();
+  var prev = currentProjFilter;
+  var html = '<option value="__all">All projects (' + allResponses.length + ')</option>';
+  sortedProjKeys(map).forEach(function(k){
+    var count = allResponses.filter(function(r){ return projKeyOf(r) === k; }).length;
+    html += '<option value="' + esc(k) + '">' + esc(map[k]) + ' (' + count + ')</option>';
+  });
+  sel.innerHTML = html;
+  if (prev !== '__all' && !map[prev]) prev = '__all';
+  sel.value = prev; currentProjFilter = prev;
+}
+
+function onProjFilterChange() {
+  currentProjFilter = document.getElementById('proj-filter').value;
+  renderSelectList();
+}
+
+function visibleResponses() {
+  if (currentProjFilter === '__all') return allResponses.slice();
+  return allResponses.filter(function(r){ return projKeyOf(r) === currentProjFilter; });
+}
+
+function selectRowHtml(r) {
+  var checked = selectedIds[r.rowId] ? 'checked' : '';
+  var name = esc(r.fullName || ((r.first||'') + ' ' + (r.last||'')));
+  return '<label class="select-row">' +
+    '<input type="checkbox" ' + checked + ' onchange="toggleSelect(' + r.rowId + ', this.checked)">' +
+    '<div><div class="select-row-name">' + name + '</div>' +
+    '<div class="select-row-date">' + fmtDate(r.timestamp) + '</div></div>' +
+    '</label>';
+}
+
 function renderSelectList() {
   var el = document.getElementById('select-list');
   if (!el) return;
+  populateProjFilter();
   if (!allResponses.length) {
     el.innerHTML = '<div class="state-box" style="padding:40px 20px">' +
       '<div class="state-icon">📭</div>' +
@@ -1606,16 +1688,22 @@ function renderSelectList() {
     updateSelectCount();
     return;
   }
-  var sorted = allResponses.slice().sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
-  el.innerHTML = sorted.map(function(r) {
-    var checked = selectedIds[r.rowId] ? 'checked' : '';
-    var name = esc(r.fullName || ((r.first||'') + ' ' + (r.last||'')));
-    return '<label class="select-row">' +
-      '<input type="checkbox" ' + checked + ' onchange="toggleSelect(' + r.rowId + ', this.checked)">' +
-      '<div><div class="select-row-name">' + name + '</div>' +
-      '<div class="select-row-date">' + fmtDate(r.timestamp) + '</div></div>' +
-      '</label>';
-  }).join('');
+  var byDate = function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); };
+  var html = '';
+  if (currentProjFilter === '__all') {
+    var map = distinctProjects();
+    sortedProjKeys(map).forEach(function(k){
+      var items = allResponses.filter(function(r){ return projKeyOf(r) === k; }).sort(byDate);
+      html += '<div class="select-group-hd"><span class="select-group-name">' + esc(map[k]) + ' · ' + items.length + '</span>' +
+        '<span class="select-group-actions">' +
+        '<button class="link-btn" onclick="selectGroup(\'' + esc(k) + '\',true)">all</button>' +
+        '<button class="link-btn" onclick="selectGroup(\'' + esc(k) + '\',false)">none</button></span></div>';
+      html += items.map(selectRowHtml).join('');
+    });
+  } else {
+    html = visibleResponses().sort(byDate).map(selectRowHtml).join('');
+  }
+  el.innerHTML = html;
   updateSelectCount();
 }
 
@@ -1624,9 +1712,13 @@ function toggleSelect(rowId, on) {
   updateSelectCount();
 }
 
+function selectGroup(key, on) {
+  allResponses.forEach(function(r){ if (projKeyOf(r) === key) { if (on) selectedIds[r.rowId] = true; else delete selectedIds[r.rowId]; } });
+  renderSelectList();
+}
+
 function selectAllResp(on) {
-  selectedIds = {};
-  if (on) allResponses.forEach(function(r){ selectedIds[r.rowId] = true; });
+  visibleResponses().forEach(function(r){ if (on) selectedIds[r.rowId] = true; else delete selectedIds[r.rowId]; });
   renderSelectList();
 }
 
@@ -1714,22 +1806,22 @@ function buildAnalysisPrompt(selected) {
   lines.push('- Base every finding strictly on the text provided below. Do not speculate beyond it.');
   lines.push('');
   lines.push('For EACH of the four sections (C1–C4) identify:');
-  lines.push('  (a) ALIGNMENT / CONVERGENCE — where respondents clearly share a view or framing.');
-  lines.push('  (b) DIVERGENCE — where respondents disagree, define things differently, or pull in');
+  lines.push('  (a) ALIGNMENT / CONVERGENCE: where respondents clearly share a view or framing.');
+  lines.push('  (b) DIVERGENCE: where respondents disagree, define things differently, or pull in');
   lines.push('      different directions. Name who diverges and how.');
-  lines.push('  (c) STANDOUT PERSPECTIVES — a point of view or insight from one (or few) respondents');
+  lines.push('  (c) STANDOUT PERSPECTIVES: a point of view or insight from one (or few) respondents');
   lines.push('      that stands apart and is worth surfacing to the group.');
   lines.push('Then give a facilitator takeaway per section, and an overall roll-up.');
   lines.push('');
-  lines.push('CRITICAL — go beyond reporting. Reporting the findings is not enough; the client must DO or CHANGE something.');
+  lines.push('CRITICAL: go beyond reporting. Reporting the findings is not enough; the client must DO or CHANGE something.');
   lines.push('Produce a "Now What" that is action- and outcome-leading: the outcome to drive, the MINDSET shifts and');
   lines.push('the BEHAVIOR shifts the team must make (as From → To pairs), and culture-gap guidance (per dimension,');
-  lines.push('what the team should think about for execution — prompts to work through, NOT proclamations or verdicts');
+  lines.push('what the team should think about for execution: prompts to work through, NOT proclamations or verdicts');
   lines.push('about their culture) to discuss live with the client.');
   lines.push('');
   lines.push('Use the facilitation framing for each section as your lens:');
   SECTIONS.forEach(function(s){
-    lines.push('  ' + s.code + ' — ' + s.title + ' (' + s.sub + '): ' + s.facilitator);
+    lines.push('  ' + s.code + ' · ' + s.title + ' (' + s.sub + '): ' + s.facilitator);
   });
   lines.push('');
   lines.push('Number of respondents: ' + selected.length);
@@ -1768,10 +1860,10 @@ function buildAnalysisPrompt(selected) {
   lines.push('    "watchItems": ["things the facilitator should raise live in the room", ...]');
   lines.push('  },');
   lines.push('  "nowWhat": {');
-  lines.push('    "outcome": "the action/outcome to drive — what changes if this works",');
+  lines.push('    "outcome": "the action/outcome to drive (what changes if this works)",');
   lines.push('    "mindsetShifts": [{"from": "today\'s belief", "to": "the belief the strategy needs"}, ...],');
   lines.push('    "behaviorShifts": [{"from": "today\'s observable behavior", "to": "the new observable behavior"}, ...],');
-  lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution — a prompt to work through, not a verdict about their culture"}, ...]');
+  lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution (a prompt to work through, not a verdict about their culture)"}, ...]');
   lines.push('  }');
   lines.push('}');
   lines.push('Every array may be empty if nothing qualifies, but include all keys. Keep quotes verbatim.');
@@ -1862,7 +1954,7 @@ function showRunError(msg) {
   errEl.style.display = 'block';
 }
 
-// Tolerant JSON parse — strips code fences and grabs the outermost {...}
+// Tolerant JSON parse: strips code fences and grabs the outermost {...}
 function parseJsonLoose(text) {
   if (!text) return null;
   var t = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
@@ -1886,7 +1978,7 @@ function buildReportHtml(report, forExport) {
 
   var html = '';
   html += '<div class="report-head">' +
-    '<div class="report-eyebrow">The Cardwell Way — 4C Model · Leadership Alignment</div>' +
+    '<div class="report-eyebrow">The Cardwell Way · 4C Model · Leadership Alignment</div>' +
     '<div class="report-title">Response Analysis</div>' +
     '<div class="report-meta">' +
       m.respondents.length + ' respondent' + (m.respondents.length !== 1 ? 's' : '') + ': ' + esc(m.respondents.join(', ')) + '<br>' +
@@ -1897,8 +1989,9 @@ function buildReportHtml(report, forExport) {
 
   if (!forExport) {
     html += '<div class="report-toolbar">' +
+      '<button class="btn-action btn-primary-sm" onclick="saveAnalysis()">💾 Save analysis</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (HTML)</button>' +
-      '<button class="btn-action btn-primary-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
+      '<button class="btn-action btn-ghost-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
       '</div>';
   }
 
@@ -1948,12 +2041,12 @@ function buildReportHtml(report, forExport) {
       '</div></div>';
   }
 
-  // Now What — action / outcome leading
+  // Now What: action / outcome leading
   if (d.nowWhat) {
     var nw = d.nowWhat;
     html += '<div class="report-block nowwhat-block">';
     html += '<div class="report-section-title"><span class="report-section-name">Now What</span></div>';
-    html += '<div class="report-section-sub">Reporting the findings is not the work — changing how the team operates is.</div>';
+    html += '<div class="report-section-sub">Reporting the findings is not the work. Changing how the team operates is.</div>';
     if (nw.outcome) {
       html += '<div class="nowwhat-outcome"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</div>';
     }
@@ -1964,8 +2057,8 @@ function buildReportHtml(report, forExport) {
       html += '<div class="shift-head">The behavior shifts this requires</div>' + fromToGrid(nw.behaviorShifts);
     }
     if (nw.cultureGap && nw.cultureGap.length) {
-      html += '<div class="shift-head">The culture gap — what to think about for execution</div>';
-      html += '<div class="report-section-sub" style="margin-bottom:10px">Prompts to work through together — not verdicts about the culture. Decide where the team lands and a first step for each; this sets up the performance-culture conversation behind the plan.</div>';
+      html += '<div class="shift-head">The culture gap: what to think about for execution</div>';
+      html += '<div class="report-section-sub" style="margin-bottom:10px">Prompts to work through together, not verdicts about the culture. Decide where the team lands and a first step for each; this sets up the performance-culture conversation behind the plan.</div>';
       html += cultureGapTable(nw.cultureGap);
     }
     html += '</div>';
@@ -1980,7 +2073,7 @@ function buildReportHtml(report, forExport) {
         deliverableCard('Findings Report', 'Word (.docx)', 'Client-facing', 'Color-coded C1–C4 findings, exec summary, roll-up, and the Now What.') +
         deliverableCard('Facilitator Guide', 'Word (.docx)', 'Internal', 'Run-of-show, prompts per section, the Now What & culture-gap conversation.') +
         deliverableCard('Leadership Deck', 'PowerPoint (.pptx)', 'Client-facing', 'Headline, a slide per C, decisions to resolve, shifts, and culture gap.') +
-        deliverableCard('Executive One-Page', 'Word (.docx)', 'Client-facing', 'Single-page synthesis: tensions, shifts, and next steps — OnePage-ready.') +
+        deliverableCard('Executive One-Page', 'Word (.docx)', 'Client-facing', 'Single-page synthesis: tensions, shifts, and next steps, OnePage-ready.') +
       '</div>' +
       '<div class="report-section-sub" style="margin-top:12px">Ask Claude in Cowork to “generate the 4C facilitation package from this analysis” to produce the branded files.</div>' +
       '</div>';
@@ -2038,7 +2131,7 @@ function downloadReport() {
   var styles = document.querySelector('style').innerHTML;
   var doc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-    '<title>4C Analysis — Regions L&D</title>' +
+    '<title>4C Analysis · Regions L&D</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
     '<style>' + styles + ' body{padding:28px;max-width:1000px;margin:0 auto;background:#fff}</style>' +
     '</head><body>' + inner + '</body></html>';
@@ -2051,8 +2144,77 @@ function downloadReport() {
   URL.revokeObjectURL(url);
 }
 
+// ── Save / reload analyses (stored centrally in the backend) ───────────────────
+var savedAnalyses = [];
+
+function saveAnalysis() {
+  if (!lastReport) { alert('Run an analysis first.'); return; }
+  var projName = (currentProjFilter && currentProjFilter !== '__all') ? (distinctProjects()[currentProjFilter] || '') : '';
+  var def = (projName ? projName + ' · ' : '') + lastReport.meta.respondents.length + ' respondents · ' + fmtDate(lastReport.meta.when);
+  var title = prompt('Name this analysis:', def);
+  if (title === null) return;
+  var payload = { type: 'analysis', token: projToken(), analysis: {
+    title: title || def,
+    projectSlug: (currentProjFilter && currentProjFilter !== '__all') ? currentProjFilter : '',
+    projectName: projName, model: lastReport.meta.model,
+    respondents: lastReport.meta.respondents, data: lastReport.data
+  }};
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.success) throw new Error(j.error || 'Save failed'); loadSavedAnalyses(); alert('Analysis saved. You can reopen it anytime from "Saved analyses".'); })
+    .catch(function(e){ alert('Save failed: ' + e.message); });
+}
+
+function loadSavedAnalyses() {
+  var el = document.getElementById('saved-analyses-list'); if (!el) return;
+  el.innerHTML = '<div class="state-box" style="padding:24px 20px"><div class="big-spinner"></div></div>';
+  fetch(ENDPOINT_URL + '?action=listAnalyses&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.success) throw new Error(j.error || 'Failed'); savedAnalyses = j.analyses || []; renderSavedAnalyses(); })
+    .catch(function(e){ el.innerHTML = '<div class="state-box" style="padding:24px 20px"><div class="state-sub">Could not load saved analyses. ' + esc(e.message) + '</div></div>'; });
+}
+
+function renderSavedAnalyses() {
+  var el = document.getElementById('saved-analyses-list'); if (!el) return;
+  if (!savedAnalyses.length) {
+    el.innerHTML = '<div class="state-box" style="padding:30px 20px"><div class="state-sub">No saved analyses yet. Run one, then click Save analysis.</div></div>';
+    return;
+  }
+  el.innerHTML = savedAnalyses.map(function(a){
+    return '<div class="proj-row">' +
+      '<div class="proj-info"><div class="proj-title">' + esc(a.title || 'Untitled') + '</div>' +
+      '<div class="proj-meta">' + esc(a.model || '') + ' · ' + (a.respondentCount || 0) + ' resp · ' + fmtDate(a.createdAt) + '</div></div>' +
+      '<div class="proj-row-actions">' +
+        '<button class="btn-icon" title="Open" onclick="openSavedAnalysis(\'' + esc(a.id) + '\')">↗</button>' +
+        '<button class="btn-icon danger" title="Delete" onclick="deleteSavedAnalysis(\'' + esc(a.id) + '\')">🗑</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function openSavedAnalysis(id) {
+  fetch(ENDPOINT_URL + '?action=getAnalysis&id=' + encodeURIComponent(id) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success || !j.analysis) throw new Error(j.error || 'Not found');
+      var a = j.analysis;
+      lastReport = { data: a.data, meta: { model: a.model, when: a.createdAt, respondents: a.respondents || [] } };
+      renderReport(lastReport);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    })
+    .catch(function(e){ alert('Could not open analysis: ' + e.message); });
+}
+
+function deleteSavedAnalysis(id) {
+  var a = savedAnalyses.find(function(x){ return x.id === id; });
+  if (!confirm('Delete saved analysis "' + (a ? a.title : id) + '"?')) return;
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ type: 'deleteAnalysis', token: projToken(), id: id }) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.success) throw new Error(j.error); loadSavedAnalyses(); })
+    .catch(function(e){ alert('Delete failed: ' + e.message); });
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-// PROJECTS — master controller (create / preview / publish personalized surveys)
+// PROJECTS: master controller (create / preview / publish personalized surveys)
 // ══════════════════════════════════════════════════════════════════════════════
 var projLogo = '';            // current logo dataURL in the editor
 var projSlugEdited = false;
@@ -2132,7 +2294,7 @@ function afterLogo(name) {
 }
 function clearLogo() {
   projLogo = ''; document.getElementById('pf-logo').value = '';
-  document.getElementById('pf-logo-name').textContent = 'No logo — Cardwell mark only';
+  document.getElementById('pf-logo-name').textContent = 'No logo, Cardwell mark only';
   document.getElementById('pf-logo-clear').style.display = 'none';
   updatePreview();
 }
@@ -2145,7 +2307,7 @@ function updatePreview() {
   var themed = !!(client || project || projLogo);
   bp.classList.toggle('themed', themed);
   bp.style.background = themed ? ('linear-gradient(135deg, ' + c1 + ' 0%, ' + c2 + ' 100%)') : '';
-  document.getElementById('bp-name').textContent = project || 'Cardwell Way — 4C Model';
+  document.getElementById('bp-name').textContent = project || 'Cardwell Way · 4C Model';
   document.getElementById('bp-sub').textContent = client || 'Leadership Alignment Survey';
   if (projLogo) {
     document.getElementById('bp-logo-img').src = projLogo;
@@ -2179,7 +2341,7 @@ function saveProject(status) {
       if (!j.success) throw new Error(j.error || 'Save failed');
       loadProjects();
       if (status === 'published') {
-        alert('Published!\n\nClient URL:\n' + SURVEY_BASE_URL + '/' + j.slug + '\n\nSend this to the client. (Custom paths require the one-time vercel.json rewrite — see deploy notes.)');
+        alert('Published!\n\nClient URL:\n' + SURVEY_BASE_URL + '/' + j.slug + '\n\nSend this to the client. (Custom paths require the one-time vercel.json rewrite, see deploy notes.)');
       } else {
         showProjErr(''); document.getElementById('proj-error').style.display = 'none';
       }
@@ -2238,7 +2400,7 @@ function editProject(slug) {
   setColor('1', p.color1 || '#254deb'); setColor('2', p.color2 || '#00007b');
   projLogo = p.logo || '';
   if (projLogo) { document.getElementById('pf-logo-name').textContent = 'Current logo'; document.getElementById('pf-logo-clear').style.display = 'inline'; }
-  else { document.getElementById('pf-logo-name').textContent = 'No logo — Cardwell mark only'; document.getElementById('pf-logo-clear').style.display = 'none'; }
+  else { document.getElementById('pf-logo-name').textContent = 'No logo, Cardwell mark only'; document.getElementById('pf-logo-clear').style.display = 'none'; }
   document.getElementById('proj-error').style.display = 'none';
   updatePreview(); updateUrlLine();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2263,11 +2425,11 @@ function deleteProject(slug) {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function fmtDate(ts) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   return new Date(ts).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 }
 function fmtDateFull(ts) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   return new Date(ts).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
 }
 function fmtTime(d) { return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }); }
@@ -2281,7 +2443,7 @@ function esc(s) {
   return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Print styling — only the report card prints when in analysis view
+// Print styling: only the report card prints when in analysis view
 var ps = document.createElement('style');
 ps.media = 'print';
 ps.textContent = '.topbar,.toolbar,.sticky-side,.report-toolbar,#view-responses{display:none!important}' +
