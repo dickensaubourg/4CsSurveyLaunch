@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root {
     --blue:       #254deb;
@@ -921,6 +923,35 @@
   .deliverable-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 6px; }
   .deliverable-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.5; }
 
+  /* Deliverable multiselect (Analyze) */
+  .deliv-multi { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .deliv-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--gray-dark); cursor: pointer; }
+  .deliv-check input { width: 16px; height: 16px; accent-color: var(--blue); }
+
+  /* Deliverables view */
+  .deliv-context { background: #eff3ff; border: 1px solid #c7d3fb; border-radius: 9px; padding: 12px 16px; font-size: 13px; color: var(--blue-mid); margin-bottom: 18px; line-height: 1.5; }
+  .deliv-context.warn { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+  .deliv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .deliv-grid { grid-template-columns: 1fr; } }
+  .dcard { background: #fff; border: 1px solid var(--gray-light); border-radius: 11px; padding: 18px 20px; display: flex; flex-direction: column; }
+  .dcard.sel { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,77,235,0.12); }
+  .dcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .dcard-title { font-size: 15px; font-weight: 800; color: var(--navy); }
+  .dcard-aud { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .aud-client { background: #ecfdf5; color: #047857; }
+  .aud-internal { background: #fef2f2; color: #b91c1c; }
+  .dcard-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 7px; }
+  .dcard-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.55; flex: 1; margin-bottom: 14px; }
+  .dcard-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dcard-status { font-size: 11px; color: var(--gray-mid); margin-top: 8px; min-height: 14px; }
+  .dcard-status.ok { color: #047857; }
+  .dcard-status.err { color: var(--red); }
+  .deliv-preview-doc { background: #fff; margin: 16px auto; max-width: 860px; box-shadow: 0 2px 14px rgba(0,0,0,0.12); }
+  .slide-thumb { background: #fff; border: 1px solid var(--gray-light); border-radius: 8px; padding: 14px 16px; margin: 0 16px 12px; }
+  .slide-thumb-n { font-size: 10px; font-weight: 800; color: var(--blue); text-transform: uppercase; letter-spacing: 0.05em; }
+  .slide-thumb-t { font-size: 15px; font-weight: 700; color: var(--navy); margin: 3px 0 6px; }
+  .slide-thumb-b { font-size: 12.5px; color: var(--gray-dark); line-height: 1.5; }
+
   /* ── Projects view ── */
   .url-line { font-size: 12px; color: var(--blue); font-weight: 700; margin: -8px 0 16px; word-break: break-all; }
   .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -939,6 +970,12 @@
   .logo-upload-btn:hover { background: var(--off-white); border-color: var(--blue); }
   .logo-name { font-size: 12px; color: var(--gray-mid); }
   .proj-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 6px; }
+  .editor-section { border-top: 1px solid var(--gray-light); margin-top: 16px; padding-top: 16px; }
+  .editor-section-hd { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+  .editor-section-note { font-size: 11px; color: var(--gray-mid); line-height: 1.5; margin-bottom: 12px; }
+  .workshop-status { font-size: 11px; color: var(--gray-mid); margin-top: 8px; line-height: 1.4; }
+  .workshop-status.ok { color: #047857; }
+  .workshop-status.warn { color: #b45309; }
 
   /* Banner preview (mirrors the survey banner) */
   .banner-preview {
@@ -1002,6 +1039,7 @@
       <button class="view-nav-btn" id="nav-projects" onclick="switchView('projects')">Projects</button>
       <button class="view-nav-btn active" id="nav-responses" onclick="switchView('responses')">Responses</button>
       <button class="view-nav-btn" id="nav-analysis" onclick="switchView('analysis')">Analysis</button>
+      <button class="view-nav-btn" id="nav-deliverables" onclick="switchView('deliverables')">Deliverables</button>
     </div>
     <div class="topbar-badge" id="topbar-badge" style="display:none"></div>
   </div>
@@ -1161,6 +1199,15 @@
                 <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 · fastest</option>
               </select>
 
+              <label class="cfg-label">Deliverables to generate</label>
+              <div class="deliv-multi" id="deliv-multi">
+                <label class="deliv-check"><input type="checkbox" value="leaderNav" checked> Leader Navigation Plan</label>
+                <label class="deliv-check"><input type="checkbox" value="summary" checked> Summary of Findings</label>
+                <label class="deliv-check"><input type="checkbox" value="runOfShow"> Workshop Run of Show</label>
+                <label class="deliv-check"><input type="checkbox" value="deck"> Workshop Deck (PPT)</label>
+              </div>
+              <div class="export-note" style="margin:-4px 0 14px">Selected items become available in the Deliverables tab after you run the analysis.</div>
+
               <button class="btn-run" id="btn-run" onclick="runAnalysis()" disabled>
                 ✦ Run Analysis
               </button>
@@ -1259,6 +1306,37 @@
                 <span class="logo-name" id="pf-logo-name">No logo, Cardwell mark only</span>
               </div>
 
+              <div class="editor-section">
+                <div class="editor-section-hd">Senior leader</div>
+                <div class="editor-section-note">Used for the Leader Navigation Plan, a private guide for this leader and the Cardwell engagement lead.</div>
+                <label class="cfg-label" for="pf-leader-name">Senior leader name</label>
+                <input type="text" class="cfg-input" id="pf-leader-name" placeholder="e.g. Dana Whitfield">
+                <label class="cfg-label" for="pf-leader-title">Senior leader title</label>
+                <input type="text" class="cfg-input" id="pf-leader-title" placeholder="e.g. SVP, Learning &amp; Development">
+              </div>
+
+              <div class="editor-section">
+                <div class="editor-section-hd">Workshop Builder</div>
+                <div class="editor-section-note">Upload the workshop objectives &amp; outcomes document. Its content is used verbatim to build the Run of Show. Same format each time; content differs per engagement.</div>
+                <label class="cfg-label" for="pf-facilitators">Number of facilitators</label>
+                <select class="cfg-select" id="pf-facilitators">
+                  <option value="1">1 facilitator</option>
+                  <option value="2" selected>2 facilitators</option>
+                  <option value="3">3 facilitators</option>
+                  <option value="4">4 facilitators</option>
+                </select>
+                <label class="cfg-label">Workshop document (.docx)</label>
+                <div class="logo-row">
+                  <label class="logo-upload-btn">
+                    <input type="file" id="pf-workshop" accept=".docx,.txt" onchange="onWorkshopFile(event)" hidden>
+                    Choose file…
+                  </label>
+                  <button class="link-btn" id="pf-workshop-clear" onclick="clearWorkshop()" style="display:none">Remove</button>
+                  <span class="logo-name" id="pf-workshop-name">No document uploaded</span>
+                </div>
+                <div class="workshop-status" id="pf-workshop-status"></div>
+              </div>
+
               <div class="run-error" id="proj-error"></div>
 
               <div class="proj-actions">
@@ -1306,6 +1384,40 @@
       </div>
     </div><!-- /view-projects -->
 
+    <!-- ─────────── DELIVERABLES VIEW ─────────── -->
+    <div class="view" id="view-deliverables">
+      <div class="toolbar">
+        <span class="toolbar-title">Deliverables</span>
+        <div class="toolbar-right">
+          <label class="proj-filter-label" for="deliv-project" style="margin:0 6px 0 0;display:inline-block">Client project</label>
+          <select class="cfg-select" id="deliv-project" style="margin-bottom:0;width:auto;min-width:220px" onchange="onDelivProjectChange()"></select>
+        </div>
+      </div>
+
+      <div class="deliv-context" id="deliv-context"></div>
+
+      <div class="deliv-grid" id="deliv-grid"></div>
+      <div class="export-note" style="margin-top:14px">Every document is a draft for the Cardwell project team to review against brand and project outcomes before sending. No em dashes are used in generated content.</div>
+    </div><!-- /view-deliverables -->
+
+  </div>
+</div>
+
+<!-- ══ PREVIEW MODAL ══ -->
+<div class="modal-overlay" id="preview-overlay" onclick="closePreviewBg(event)">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-name" id="preview-title">Preview</div>
+        <div class="modal-date" id="preview-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closePreview()">✕</button>
+    </div>
+    <div class="modal-body" id="preview-body" style="max-height:72vh;background:var(--off-white)"></div>
+    <div class="modal-footer">
+      <button class="btn-delete" style="color:var(--gray-mid);border-color:var(--gray-light)" onclick="closePreview()">Close</button>
+      <button class="btn-close-modal" id="preview-download" onclick="downloadCurrentDeliverable()">⬇ Download</button>
+    </div>
   </div>
 </div>
 
@@ -1422,12 +1534,13 @@ function logout() {
 // ── View switching ─────────────────────────────────────────────────────────────
 function switchView(view) {
   currentView = view;
-  ['responses','analysis','projects'].forEach(function(v){
+  ['responses','analysis','projects','deliverables'].forEach(function(v){
     var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
     var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
   });
   if (view === 'analysis') { renderSelectList(); loadSavedAnalyses(); }
   if (view === 'projects') loadProjects();
+  if (view === 'deliverables') enterDeliverables();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1943,6 +2056,11 @@ function runAnalysis() {
         respondents: selected.map(function(r){ return r.fullName || ((r.first||'') + ' ' + (r.last||'')); })
       }
     };
+    // Capture context for the Deliverables tab
+    lastAnalysisResponses = selected.slice();
+    lastAnalysisProject = (currentProjFilter && currentProjFilter !== '__all') ? currentProjFilter : '';
+    lastDeliverables = Array.prototype.map.call(
+      document.querySelectorAll('#deliv-multi input:checked'), function(c){ return c.value; });
     renderReport(lastReport);
   })
   .catch(function(err){
@@ -2227,9 +2345,371 @@ function deleteSavedAnalysis(id) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// DELIVERABLES (in-browser generation: branded HTML to PDF + real .pptx)
+// ══════════════════════════════════════════════════════════════════════════════
+var lastAnalysisResponses = [];
+var lastAnalysisProject = '';
+var lastDeliverables = ['leaderNav','summary'];
+var generatedDocs = {};        // key -> { type:'html', html, fileBase } | { type:'deck', slides, project, fileBase }
+var currentPreviewKey = null;
+
+var DELIVERABLES = [
+  { key:'leaderNav', title:'Leader Navigation Plan', fmt:'PDF · client-branded', audience:'Client-facing',
+    desc:'A private guide for the senior leader and the Cardwell engagement lead. Surfaces hidden landmines that could derail the strategy and the guideposts that drive clarity and execution, to shape the leader’s own development plan.' },
+  { key:'summary', title:'Summary of Findings', fmt:'PDF · client-branded', audience:'Client-facing',
+    desc:'The team’s survey input reported as facts, organized into convergence, divergence, and standout points using verbatim quotes only. No interpretation. Ends with guidance for talking to the team plus a worksheet.' },
+  { key:'runOfShow', title:'Workshop Run of Show', fmt:'PDF · Cardwell internal', audience:'Internal',
+    desc:'A facilitator run of show built from your uploaded workshop document (used verbatim). Timed activities that drive each objective and outcome, with lead/support roles for your facilitators and slide references.' },
+  { key:'deck', title:'Workshop Deck (PPT)', fmt:'PPTX · client-branded', audience:'Client-facing',
+    desc:'A client-branded slide deck for the workshop leaders that complements the Run of Show. Slides are referenced by number in the Run of Show.' }
+];
+
+function enterDeliverables() {
+  var ctx = document.getElementById('deliv-context');
+  // refresh projects so leader/workshop fields are current
+  fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (j.success) allProjects = j.projects || []; })
+    .catch(function(){})
+    .then(function(){ buildDelivProjectDropdown(); renderDelivContext(); renderDelivCards(); });
+}
+
+function buildDelivProjectDropdown() {
+  var sel = document.getElementById('deliv-project'); if (!sel) return;
+  var html = '<option value="">No project (Cardwell branding)</option>';
+  allProjects.forEach(function(p){
+    html += '<option value="' + esc(p.slug) + '">' + esc(p.projectName || p.slug) + (p.clientName ? ' · ' + esc(p.clientName) : '') + '</option>';
+  });
+  sel.innerHTML = html;
+  if (lastAnalysisProject) sel.value = lastAnalysisProject;
+}
+
+function getDelivProject() {
+  var slug = document.getElementById('deliv-project').value;
+  if (!slug) return null;
+  return allProjects.find(function(p){ return p.slug === slug; }) || null;
+}
+
+function onDelivProjectChange() { renderDelivContext(); renderDelivCards(); }
+
+function renderDelivContext() {
+  var ctx = document.getElementById('deliv-context');
+  if (!lastReport) {
+    ctx.className = 'deliv-context warn';
+    ctx.innerHTML = 'No analysis loaded yet. Go to the Analysis tab, select responses, choose deliverables, and Run Analysis (or open a saved analysis). Then return here to generate.';
+    return;
+  }
+  ctx.className = 'deliv-context';
+  var p = getDelivProject();
+  ctx.innerHTML = 'Using the latest analysis (' + lastReport.meta.respondents.length + ' respondents, ' + esc(lastReport.meta.model) + '). ' +
+    'Branding: ' + (p ? esc(p.projectName || p.slug) + (p.clientName ? ' · ' + esc(p.clientName) : '') : 'Cardwell (no client project selected)') + '. ' +
+    'Make sure your Anthropic API key is set in the Analysis tab.';
+}
+
+function renderDelivCards() {
+  var grid = document.getElementById('deliv-grid'); if (!grid) return;
+  grid.innerHTML = DELIVERABLES.map(function(d){
+    var seld = lastDeliverables.indexOf(d.key) >= 0;
+    var gen = generatedDocs[d.key];
+    var actions = '<button class="btn-action btn-primary-sm" onclick="generateDeliverable(\'' + d.key + '\')">' + (gen ? 'Regenerate' : 'Generate') + '</button>';
+    if (gen) actions += '<button class="btn-action btn-ghost-sm" onclick="previewDeliverable(\'' + d.key + '\')">Preview</button>' +
+                        '<button class="btn-action btn-ghost-sm" onclick="downloadDeliverable(\'' + d.key + '\')">⬇ Download</button>';
+    return '<div class="dcard' + (seld ? ' sel' : '') + '">' +
+      '<div class="dcard-top"><span class="dcard-title">' + esc(d.title) + '</span>' +
+      '<span class="dcard-aud ' + (d.audience === 'Internal' ? 'aud-internal' : 'aud-client') + '">' + d.audience + '</span></div>' +
+      '<div class="dcard-fmt">' + esc(d.fmt) + (seld ? ' · selected' : '') + '</div>' +
+      '<div class="dcard-desc">' + esc(d.desc) + '</div>' +
+      '<div class="dcard-actions">' + actions + '</div>' +
+      '<div class="dcard-status" id="dstatus-' + d.key + '">' + (gen ? '✓ Generated. Preview, then download.' : '') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function dStatus(key, msg, cls) {
+  var el = document.getElementById('dstatus-' + key);
+  if (el) { el.textContent = msg; el.className = 'dcard-status' + (cls ? ' ' + cls : ''); }
+}
+
+// ── Anthropic call (reuses the Analysis tab key + model) ───────────────────────
+function anthropicComplete(prompt, maxTokens) {
+  var key = (document.getElementById('api-key').value || '').trim();
+  if (!key) return Promise.reject(new Error('Enter your Anthropic API key in the Analysis tab first.'));
+  var model = document.getElementById('model-select').value;
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model: model, max_tokens: maxTokens || 4000, messages: [{ role:'user', content: prompt }] })
+  }).then(function(res){ return res.json().then(function(b){ return { ok:res.ok, status:res.status, body:b }; }); })
+    .then(function(r){
+      if (!r.ok) throw new Error((r.body && r.body.error && r.body.error.message) || ('HTTP ' + r.status));
+      var t = ''; if (r.body && r.body.content) t = r.body.content.map(function(c){ return c.text || ''; }).join('');
+      return t;
+    });
+}
+
+var CARDWELL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 313.1408 262.5304" width="40" height="33"><path fill="#ffffff" d="M75.6378,183.3854c-11.9523-13.3167-18.9947-30.4637-19.8322-48.3379-1.0436-22.2732,7.1502-43.3873,22.7974-59.0339,14.7579-14.7584,34.3794-22.8856,55.2507-22.8856,16.2503,0,31.7339,4.9423,44.7623,14.0924,1.5563,1.093,3.6392.969,4.9839-.3758l31.4705-31.4707c1.6474-1.6474,1.5317-4.421-.2907-5.8724C147.5776-24.022,39.2175-1.3273,6.9287,97.6075c-7.0645,21.6462-7.1796,45.1817-.1677,66.8449,20.8851,64.524,73.974,96.7654,127.0926,96.7654,28.6641,0,57.3345-9.4013,80.9278-28.1926,1.8218-1.451,1.937-4.2224.2902-5.8692l-31.4871-31.4872c-1.3414-1.3414-3.4208-1.4631-4.9751-.3755-31.5899,22.1042-75.9945,18.1489-102.9717-11.9079Z"/><path fill="#ffffff" d="M307.2864,141.6265c5.7181-5.7239,5.7182-14.9981.0002-20.7221l-72.4052-72.4808c-1.5273-1.527-4.0031-1.527-5.5304,0l-31.153,31.1535c-1.5271,1.5271-1.5271,4.0031,0,5.5302l43.3919,43.3919c1.5271,1.5271,1.5271,4.003,0,5.5301l-43.5784,43.5786c-1.5272,1.5273-1.5272,4.0034,0,5.5307l31.1532,31.153c1.527,1.527,4.0031,1.527,5.5301,0l72.5914-72.6651Z"/></svg>';
+
+function brandedDocHtml(project, o) {
+  var useClient = o.brand !== 'cardwell';
+  var c1 = (useClient && project && project.color1) || '#00007b';
+  var c2 = (useClient && project && project.color2) || '#0b1747';
+  var client = (project && project.clientName) || '';
+  var pname = (project && project.projectName) || '';
+  var logo = (useClient && project && project.logo) || '';
+  var audColor = o.audience === 'Internal' ? '#b91c1c' : '#047857';
+  var chip = logo ? '<span class="chip"><img src="' + logo + '" alt=""></span><span class="divider"></span>' : '';
+  var banner =
+    '<div class="doc-banner">' +
+      '<div class="doc-overlay"></div>' +
+      '<div class="doc-brand">' + CARDWELL_SVG + '<span class="divider"></span>' + chip +
+        '<div><div class="doc-bname">' + esc(o.title) + '</div>' +
+        '<div class="doc-bsub">' + esc(pname || 'The Cardwell Way · 4C Model') + (client ? ' · ' + esc(client) : '') + '</div></div>' +
+      '</div>' +
+      '<div class="doc-tag">Confidential</div>' +
+    '</div>';
+  var meta = '<div class="doc-meta"><span class="aud" style="color:' + audColor + '">Audience: ' + esc(o.audience) + '</span>' +
+    '<span class="draft">Draft for Cardwell review</span></div>';
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + esc(o.title) + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
+    '<style>' + docCss(c1, c2) + '</style></head><body>' + banner + meta +
+    '<main>' + o.bodyHtml + '</main>' +
+    '<footer class="doc-footer">Cardwell · The Cardwell Way · 4C Model. Confidential. This is a draft for the Cardwell project team to review against brand and project outcomes.</footer>' +
+    '</body></html>';
+}
+
+function docCss(c1, c2) {
+  return 'body{font-family:Inter,Arial,sans-serif;color:#1F2937;margin:0;background:#fff;line-height:1.6;font-size:14px}' +
+    'main{max-width:820px;margin:0 auto;padding:8px 40px 40px}' +
+    '.doc-banner{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(135deg,' + c1 + ' 0%,' + c2 + ' 100%)}' +
+    '.doc-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,45,0.55),rgba(8,15,45,0.15) 55%,rgba(8,15,45,0) 100%)}' +
+    '.doc-brand{display:flex;align-items:center;gap:11px;position:relative;z-index:1}' +
+    '.doc-brand .divider{width:1px;height:26px;background:rgba(255,255,255,0.3)}' +
+    '.doc-brand .chip{background:#fff;border-radius:6px;padding:4px 8px;display:flex;align-items:center;height:34px}' +
+    '.doc-brand .chip img{max-height:26px;max-width:110px;display:block}' +
+    '.doc-bname{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.35)}' +
+    '.doc-bsub{font-size:12px;color:rgba(255,255,255,0.85);text-shadow:0 1px 3px rgba(0,0,0,0.35)}' +
+    '.doc-tag{position:relative;z-index:1;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.9);background:rgba(0,0,0,0.22);padding:4px 9px;border-radius:20px}' +
+    '.doc-meta{max-width:820px;margin:0 auto;padding:14px 40px 0;display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}' +
+    '.doc-meta .draft{color:#b45309}' +
+    'h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;color:' + c1 + ';margin:26px 0 8px;border-bottom:2px solid #E5E7EB;padding-bottom:6px}' +
+    'h3{font-size:15px;color:#0b1747;margin:16px 0 6px}' +
+    'p{margin:0 0 10px}p.lead{font-size:15px;color:#374151}' +
+    'ul{margin:0 0 12px 20px}li{margin:4px 0}' +
+    'blockquote{margin:8px 0 2px;padding:10px 14px;background:#F5F5F7;border-left:3px solid ' + c1 + ';border-radius:0 6px 6px 0;font-style:italic;color:#1F2937}' +
+    'p.attr{margin:0 0 12px;font-size:12px;font-weight:700;color:#6B7280}' +
+    '.callout{border-radius:8px;padding:13px 16px;margin:0 0 12px;border:1px solid #E5E7EB}' +
+    '.callout h3{margin:0 0 5px}' +
+    '.callout.landmine{background:#F7ECE7;border-color:#e6c3b6}.callout.landmine h3{color:#9A3324}' +
+    '.callout.guidepost{background:#E6F4EC;border-color:#a7d8bd}.callout.guidepost h3{color:#1E7A46}' +
+    '.worksheet{background:#fff;border:1px dashed #b8c2d8;border-radius:8px;padding:13px 16px;margin:8px 0 14px;min-height:90px}' +
+    '.worksheet h3{margin-top:0;color:' + c1 + '}' +
+    'table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12.5px}' +
+    'th{background:' + c1 + ';color:#fff;text-align:left;padding:7px 9px;font-size:11px}' +
+    'td{border:1px solid #E5E7EB;padding:7px 9px;vertical-align:top}' +
+    'p.meta{font-size:12px;color:#6B7280;font-weight:600;margin:0 0 8px}' +
+    '.doc-footer{max-width:820px;margin:24px auto 0;padding:14px 40px 30px;border-top:1px solid #E5E7EB;font-size:11px;color:#6B7280}' +
+    '@media print{.doc-meta .draft{color:#b45309}}';
+}
+
+// ── Build verbatim response text for prompts ───────────────────────────────────
+function responsesVerbatimText(list) {
+  var lines = [];
+  list.forEach(function(r, i){
+    var name = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || ('Respondent ' + (i+1));
+    lines.push('### RESPONDENT: ' + name);
+    SECTIONS.forEach(function(s){
+      s.questions.forEach(function(q){
+        lines.push('[' + s.code + ' ' + q.num + '] ' + q.text);
+        lines.push('ANSWER: ' + ((r[q.id] || '').trim() || '(no answer)'));
+      });
+    });
+  });
+  return lines.join('\n');
+}
+
+var NO_DASH = 'Do not use em dashes anywhere in your output. Use commas, colons, parentheses, or periods instead.';
+
+// ── Generate one deliverable ───────────────────────────────────────────────────
+function generateDeliverable(key) {
+  var project = getDelivProject();
+  if (key === 'leaderNav') return genLeaderNav(project);
+  if (key === 'summary')   return genSummary(project);
+  if (key === 'runOfShow') return genWorkshop(project, 'runOfShow');
+  if (key === 'deck')      return genWorkshop(project, 'deck');
+}
+
+function fileBaseFor(project, label) {
+  var who = project ? (project.slug) : 'cardwell';
+  return 'Cardwell_' + who + '_' + label + '_' + stamp();
+}
+
+function genLeaderNav(project) {
+  if (!lastReport) { dStatus('leaderNav','Run or open an analysis first.','err'); return; }
+  var leaderName = (project && project.seniorLeaderName) || '';
+  var leaderTitle = (project && project.seniorLeaderTitle) || '';
+  dStatus('leaderNav','Generating…','');
+  var prompt = 'You are creating a confidential Leader Navigation Plan for ' +
+    (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior leader') +
+    (project && project.clientName ? ' at ' + project.clientName : '') + '.\n' +
+    'Audience: this leader and the Cardwell engagement lead only. Purpose: help the leader shape their own development plan to lead the strategy successfully.\n' +
+    'Base everything ONLY on the survey analysis JSON below. Do not invent facts.\n' +
+    'Identify:\n' +
+    '- LANDMINES: hidden risks and tensions from the team feedback (divergence, watch items, standout concerns) that could derail the strategy if the leader does not address them. For each: what it is, why it is dangerous, and what the leader should do.\n' +
+    '- GUIDEPOSTS: sources of strength and alignment (convergence, takeaways) that will help the leader drive clarity and execution. For each: what it is and how to use it.\n' +
+    '- A short development focus section: 3 to 5 reflective prompts and focus areas for the leader\'s own growth based on the feedback.\n' +
+    'Tone: direct, supportive, executive. ' + NO_DASH + '\n' +
+    'Return ONLY an HTML fragment (no html, head, or body tags) using ONLY these tags and classes: ' +
+    '<p class="lead"> for the opening addressed to the leader; <h2> for section titles (use "Landmines to navigate", "Guideposts to lean on", "Shaping your development plan"); ' +
+    '<div class="callout landmine"><h3>Short title</h3><p>what, why it is dangerous, what to do</p></div>; ' +
+    '<div class="callout guidepost"><h3>Short title</h3><p>what it is and how to use it</p></div>; ' +
+    '<p>; <ul><li>; and for the development section a <div class="worksheet"><h3>Reflect</h3><ul><li>prompt</li></ul></div>.\n\n' +
+    'ANALYSIS JSON:\n' + JSON.stringify(lastReport.data);
+  anthropicComplete(prompt, 4500).then(function(text){
+    var body = stripFrag(text);
+    generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Leader Navigation Plan', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'LeaderNavigationPlan') };
+    dStatus('leaderNav','✓ Generated. Preview, then download.','ok'); renderDelivCards();
+  }).catch(function(e){ dStatus('leaderNav', e.message, 'err'); });
+}
+
+function genSummary(project) {
+  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
+    : (project ? allResponses.filter(function(r){ return projKeyOf(r) === project.slug; }) : allResponses.slice());
+  if (!list.length) { dStatus('summary','No responses available. Run an analysis or pick a project with responses.','err'); return; }
+  dStatus('summary','Generating…','');
+  var prompt = 'You are creating a Summary of Findings for ' + (project && project.clientName ? project.clientName : 'the client') +
+    (project && project.projectName ? ' (' + project.projectName + ')' : '') + '.\n' +
+    'This reports the team\'s survey input as facts, organized into Convergence, Divergence, and Standout points.\n' +
+    'CRITICAL: Do NOT interpret, summarize, paraphrase, rank, or editorialize. Use ONLY exact verbatim quotes from the responses below, each attributed to the respondent name. Cluster the quotes under the three headings. Do not add analysis sentences. The facilitators will discuss the honest truths live.\n' +
+    NO_DASH + '\n' +
+    'Return ONLY an HTML fragment using ONLY: <h2> for the three headings exactly "Convergence", "Divergence", "Standout perspectives"; optional <h3> for a short theme label that is itself drawn from the respondents\' own words; <blockquote> for one verbatim quote; <p class="attr"> for the attribution (the respondent name) under each quote; and <div class="worksheet"><h3>Facilitator notes</h3></div> at the end of each of the three sections for live discussion.\n' +
+    'Then a final section: <h2>Talking with your team</h2> with one <p> of plain, general best practice guidance on how the leader receiving this report should talk with their employees about the strategy (guidance only, not interpretation of the data), then <div class="worksheet"><h3>My plan</h3><ul><li>What I will say</li><li>What I will ask</li><li>What I will commit to</li><li>How I will follow up</li></ul></div>.\n\n' +
+    'VERBATIM RESPONSES:\n' + responsesVerbatimText(list);
+  anthropicComplete(prompt, 7000).then(function(text){
+    var body = stripFrag(text);
+    generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Summary of Findings', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SummaryOfFindings') };
+    dStatus('summary','✓ Generated. Preview, then download.','ok'); renderDelivCards();
+  }).catch(function(e){ dStatus('summary', e.message, 'err'); });
+}
+
+function genWorkshop(project, which) {
+  if (!project) { dStatus(which,'Select a client project (with an uploaded workshop document) first.','err'); return; }
+  if (!project.workshopDocText) { dStatus(which,'This project has no workshop document. Add one in the project\'s Workshop Builder.','err'); return; }
+  var n = parseInt(project.facilitatorCount, 10) || 2;
+  dStatus(which,'Generating Run of Show and deck…','');
+  if (generatedDocs.runOfShow && generatedDocs.deck && generatedDocs._workshopSlug === project.slug) {
+    dStatus(which,'✓ Generated. Preview, then download.','ok'); renderDelivCards(); return;
+  }
+  var prompt = 'You are preparing two linked deliverables for a multi-day strategy workshop for ' +
+    (project.clientName || 'the client') + (project.projectName ? ' (' + project.projectName + ')' : '') + '. There are ' + n + ' facilitator(s).\n' +
+    'The uploaded workshop document defines the days, dates, times, objectives, and outcomes. Use that content VERBATIM. Do not change, add, or remove any day, date, time, objective, or outcome.\n' +
+    'Produce:\n' +
+    '1) A facilitator RUN OF SHOW (audience: Cardwell facilitation team only). For each day or session in the document, lay out a timed sequence of recommended activities that will drive the stated objectives and outcomes. For each activity include: a time block, what happens, the purpose tied to a stated outcome, the facilitator assignment for ' + n + ' facilitator(s) (who LEADS and what the other facilitator(s) do at that time), and a reference to the supporting slide number(s) from the deck you design.\n' +
+    '2) A workshop DECK (audience: workshop leaders and participants) that complements the Run of Show. Each slide supports a moment in the run of show, and the Run of Show references these slide numbers.\n' +
+    NO_DASH + '\n' +
+    'Return ONLY JSON (no markdown, no code fences) exactly in this shape:\n' +
+    '{"slides":[{"n":1,"title":"...","bullets":["..."],"note":"optional short facilitator note"}],' +
+    '"runOfShowHtml":"HTML fragment using only <h2> for each day or session heading (copy the day, date and time verbatim), <p class=\\"meta\\"> for date and time, <p> for the session description from the document, <h3>Objectives</h3><ul><li> verbatim, <h3>Outcomes</h3><ul><li> verbatim, then a <table> with header row Time, Activity, Drives, Lead, Support, Slides and one row per activity."}\n\n' +
+    'WORKSHOP DOCUMENT (verbatim):\n' + project.workshopDocText;
+  anthropicComplete(prompt, 8000).then(function(text){
+    var data = parseJsonLoose(text);
+    if (!data || !data.runOfShowHtml || !data.slides) throw new Error('Model did not return the expected Run of Show and slides. Try again.');
+    generatedDocs.runOfShow = { type:'html', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
+    generatedDocs.deck = { type:'deck', slides: data.slides, project: project, fileBase: fileBaseFor(project,'WorkshopDeck') };
+    generatedDocs._workshopSlug = project.slug;
+    dStatus('runOfShow','✓ Generated. Preview, then download.','ok');
+    dStatus('deck','✓ Generated. Preview, then download.','ok');
+    renderDelivCards();
+  }).catch(function(e){ dStatus(which, e.message, 'err'); });
+}
+
+function stripFrag(t) {
+  return (t || '').trim().replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+}
+
+// ── Preview + download ─────────────────────────────────────────────────────────
+function previewDeliverable(key) {
+  var g = generatedDocs[key]; if (!g) return;
+  currentPreviewKey = key;
+  var d = DELIVERABLES.find(function(x){ return x.key === key; });
+  document.getElementById('preview-title').textContent = d.title;
+  document.getElementById('preview-sub').textContent = d.fmt;
+  var body = document.getElementById('preview-body');
+  body.innerHTML = '';
+  if (g.type === 'html') {
+    var ifr = document.createElement('iframe');
+    ifr.style.cssText = 'width:100%;height:72vh;border:none;background:#fff;display:block';
+    ifr.srcdoc = g.html;
+    body.appendChild(ifr);
+  } else if (g.type === 'deck') {
+    var html = '<div style="padding:16px 0">';
+    g.slides.forEach(function(s){
+      html += '<div class="slide-thumb"><div class="slide-thumb-n">Slide ' + (s.n||'') + '</div>' +
+        '<div class="slide-thumb-t">' + esc(s.title||'') + '</div>' +
+        '<div class="slide-thumb-b"><ul style="margin:0 0 0 18px">' + (s.bullets||[]).map(function(b){ return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>' +
+        (s.note ? '<div style="margin-top:6px;color:#6B7280;font-size:11px">Note: ' + esc(s.note) + '</div>' : '') + '</div></div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  }
+  document.getElementById('preview-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePreviewBg(e){ if (e.target === document.getElementById('preview-overlay')) closePreview(); }
+function closePreview(){ document.getElementById('preview-overlay').classList.remove('open'); document.body.style.overflow=''; }
+function downloadCurrentDeliverable(){ if (currentPreviewKey) downloadDeliverable(currentPreviewKey); }
+
+function downloadDeliverable(key) {
+  var g = generatedDocs[key]; if (!g) return;
+  if (g.type === 'html') {
+    var w = window.open('', '_blank');
+    if (!w) { // popup blocked: fall back to .html download
+      var blob = new Blob([g.html], { type:'text/html;charset=utf-8;' });
+      var url = URL.createObjectURL(blob); var a = document.createElement('a');
+      a.href = url; a.download = g.fileBase + '.html'; a.click(); URL.revokeObjectURL(url); return;
+    }
+    w.document.open(); w.document.write(g.html); w.document.close();
+    setTimeout(function(){ try { w.focus(); w.print(); } catch(e){} }, 500);
+  } else if (g.type === 'deck') {
+    buildDeck(g.slides, g.project, g.fileBase);
+  }
+}
+
+function buildDeck(slides, project, fileBase) {
+  if (typeof PptxGenJS === 'undefined') { alert('Slide library still loading, try again in a moment.'); return; }
+  var c1 = (project && project.color1) || '00007b';
+  var c2 = (project && project.color2) || '0b1747';
+  var hex = function(c){ return (c||'').replace('#',''); };
+  var C1 = hex(c1), C2 = hex(c2);
+  var client = (project && project.clientName) || '';
+  var pname = (project && project.projectName) || 'Strategy Workshop';
+  var pptx = new PptxGenJS();
+  pptx.defineLayout({ name:'W', width:13.333, height:7.5 }); pptx.layout = 'W';
+  // Title slide
+  var t = pptx.addSlide(); t.background = { color: C2 };
+  t.addText('CARDWELL · THE CARDWELL WAY', { x:0.6, y:1.7, w:11, h:0.4, fontFace:'Arial', fontSize:13, bold:true, color:'9FB4F2', charSpacing:2 });
+  t.addText(pname, { x:0.56, y:2.2, w:12, h:1.4, fontFace:'Georgia', fontSize:42, bold:true, color:'FFFFFF' });
+  t.addText('Strategy Workshop' + (client ? ' · ' + client : ''), { x:0.6, y:3.7, w:11, h:0.5, fontFace:'Arial', fontSize:18, color:'D6DEFB' });
+  // Content slides
+  (slides || []).forEach(function(s){
+    var sl = pptx.addSlide(); sl.background = { color:'FFFFFF' };
+    sl.addShape('rect', { x:0, y:0, w:13.333, h:1.1, fill:{ color:C1 } });
+    sl.addText(String(s.n||'') , { x:0.4, y:0.2, w:0.8, h:0.7, fontFace:'Georgia', fontSize:26, bold:true, color:'FFFFFF' });
+    sl.addText(s.title || '', { x:1.3, y:0.2, w:11.6, h:0.7, fontFace:'Georgia', fontSize:24, bold:true, color:'FFFFFF', valign:'middle' });
+    var bullets = (s.bullets || []).map(function(b){ return { text: b, options:{ bullet:true, fontSize:16, color:'1F2937', paraSpaceAfter:8 } }; });
+    if (bullets.length) sl.addText(bullets, { x:0.7, y:1.5, w:12, h:5.3, fontFace:'Arial', valign:'top' });
+    if (s.note) sl.addText('Facilitator note: ' + s.note, { x:0.7, y:6.7, w:12, h:0.5, fontFace:'Arial', fontSize:11, italic:true, color:'6B7280' });
+    sl.addText((client ? client + ' · ' : '') + 'Cardwell', { x:0.7, y:7.05, w:12, h:0.3, fontFace:'Arial', fontSize:9, color:'9AA0AA' });
+  });
+  pptx.writeFile({ fileName: fileBase + '.pptx' });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // PROJECTS: master controller (create / preview / publish personalized surveys)
 // ══════════════════════════════════════════════════════════════════════════════
 var projLogo = '';            // current logo dataURL in the editor
+var projWorkshopText = '';    // extracted workshop doc text
+var projWorkshopName = '';
 var projSlugEdited = false;
 var allProjects = [];
 
@@ -2241,11 +2721,52 @@ function newProject() {
   document.getElementById('pf-client').value = '';
   document.getElementById('pf-project').value = '';
   document.getElementById('pf-slug').value = '';
+  document.getElementById('pf-leader-name').value = '';
+  document.getElementById('pf-leader-title').value = '';
+  document.getElementById('pf-facilitators').value = '2';
   setColor('1', '#254deb'); setColor('2', '#00007b');
-  clearLogo();
+  clearLogo(); clearWorkshop();
   projSlugEdited = false;
   document.getElementById('proj-error').style.display = 'none';
   updatePreview(); updateUrlLine();
+}
+
+// ── Workshop document upload (parsed in-browser) ────────────────────────────
+function onWorkshopFile(e) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  var status = document.getElementById('pf-workshop-status');
+  status.textContent = 'Reading document…'; status.className = 'workshop-status';
+  var done = function(text) {
+    projWorkshopText = (text || '').trim();
+    projWorkshopName = file.name;
+    document.getElementById('pf-workshop-name').textContent = file.name;
+    document.getElementById('pf-workshop-clear').style.display = 'inline';
+    if (projWorkshopText.length > 47000) {
+      status.textContent = 'Loaded, but the document is long and may be too large to save. Consider trimming.';
+      status.className = 'workshop-status warn';
+    } else {
+      status.textContent = '✓ Loaded ' + projWorkshopText.split(/\s+/).filter(Boolean).length + ' words. Content will be used verbatim.';
+      status.className = 'workshop-status ok';
+    }
+  };
+  if (file.name.toLowerCase().endsWith('.txt')) {
+    var rt = new FileReader(); rt.onload = function(ev){ done(ev.target.result); }; rt.readAsText(file); return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    if (typeof mammoth === 'undefined') { status.textContent = 'Document parser still loading, try again in a moment.'; status.className = 'workshop-status warn'; return; }
+    mammoth.extractRawText({ arrayBuffer: ev.target.result })
+      .then(function(res){ done(res.value); })
+      .catch(function(err){ status.textContent = 'Could not read document: ' + err.message; status.className = 'workshop-status warn'; });
+  };
+  reader.readAsArrayBuffer(file);
+}
+function clearWorkshop() {
+  projWorkshopText = ''; projWorkshopName = '';
+  var f = document.getElementById('pf-workshop'); if (f) f.value = '';
+  document.getElementById('pf-workshop-name').textContent = 'No document uploaded';
+  document.getElementById('pf-workshop-clear').style.display = 'none';
+  var st = document.getElementById('pf-workshop-status'); if (st) { st.textContent = ''; st.className = 'workshop-status'; }
 }
 
 function setColor(n, hex) {
@@ -2346,7 +2867,12 @@ function saveProject(status) {
     slug: slug, clientName: client, projectName: project,
     color1: document.getElementById('pf-color1').value,
     color2: document.getElementById('pf-color2').value,
-    logo: projLogo, status: status
+    logo: projLogo, status: status,
+    seniorLeaderName: document.getElementById('pf-leader-name').value.trim(),
+    seniorLeaderTitle: document.getElementById('pf-leader-title').value.trim(),
+    facilitatorCount: document.getElementById('pf-facilitators').value,
+    workshopDocName: projWorkshopName,
+    workshopDocText: projWorkshopText
   }};
   fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
     .then(function(r){ return r.json(); })
@@ -2414,6 +2940,22 @@ function editProject(slug) {
   projLogo = p.logo || '';
   if (projLogo) { document.getElementById('pf-logo-name').textContent = 'Current logo'; document.getElementById('pf-logo-clear').style.display = 'inline'; }
   else { document.getElementById('pf-logo-name').textContent = 'No logo, Cardwell mark only'; document.getElementById('pf-logo-clear').style.display = 'none'; }
+  document.getElementById('pf-leader-name').value = p.seniorLeaderName || '';
+  document.getElementById('pf-leader-title').value = p.seniorLeaderTitle || '';
+  document.getElementById('pf-facilitators').value = String(p.facilitatorCount || '2');
+  projWorkshopText = p.workshopDocText || '';
+  projWorkshopName = p.workshopDocName || '';
+  var wsStatus = document.getElementById('pf-workshop-status');
+  if (projWorkshopText) {
+    document.getElementById('pf-workshop-name').textContent = projWorkshopName || 'Workshop document on file';
+    document.getElementById('pf-workshop-clear').style.display = 'inline';
+    wsStatus.textContent = '✓ Workshop document on file (' + projWorkshopText.split(/\s+/).filter(Boolean).length + ' words).';
+    wsStatus.className = 'workshop-status ok';
+  } else {
+    document.getElementById('pf-workshop-name').textContent = 'No document uploaded';
+    document.getElementById('pf-workshop-clear').style.display = 'none';
+    wsStatus.textContent = ''; wsStatus.className = 'workshop-status';
+  }
   document.getElementById('proj-error').style.display = 'none';
   updatePreview(); updateUrlLine();
   window.scrollTo({ top: 0, behavior: 'smooth' });
