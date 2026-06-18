@@ -943,6 +943,7 @@
   .dcard-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 7px; }
   .dcard-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.55; flex: 1; margin-bottom: 14px; }
   .dcard-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dcard-shared { font-size: 11px; color: #047857; background: #ecfdf5; border-radius: 6px; padding: 5px 9px; margin-bottom: 10px; }
   .dcard-status { font-size: 11px; color: var(--gray-mid); margin-top: 8px; min-height: 14px; }
   .dcard-status.ok { color: #047857; }
   .dcard-status.err { color: var(--red); }
@@ -1391,6 +1392,7 @@
         <div class="toolbar-right">
           <label class="proj-filter-label" for="deliv-project" style="margin:0 6px 0 0;display:inline-block">Client project</label>
           <select class="cfg-select" id="deliv-project" style="margin-bottom:0;width:auto;min-width:220px" onchange="onDelivProjectChange()"></select>
+          <button class="btn-action btn-ghost-sm" onclick="clearWorkspace()" title="Clear locally saved analysis and deliverables">Clear saved work</button>
         </div>
       </div>
 
@@ -1507,6 +1509,7 @@ function doLogin() {
   document.getElementById('btn-logout').style.display   = 'inline-flex';
   document.getElementById('view-nav').style.display     = 'flex';
   restoreKey();
+  restoreWorkspace();
   loadData();
 }
 
@@ -1527,6 +1530,7 @@ function logout() {
     document.getElementById('btn-logout').style.display   = 'inline-flex';
     document.getElementById('view-nav').style.display     = 'flex';
     restoreKey();
+    restoreWorkspace();
     loadData();
   }
 })();
@@ -2061,6 +2065,8 @@ function runAnalysis() {
     lastAnalysisProject = (currentProjFilter && currentProjFilter !== '__all') ? currentProjFilter : '';
     lastDeliverables = Array.prototype.map.call(
       document.querySelectorAll('#deliv-multi input:checked'), function(c){ return c.value; });
+    generatedDocs = {}; // a fresh analysis invalidates prior deliverables
+    persistWorkspace();
     renderReport(lastReport);
   })
   .catch(function(err){
@@ -2329,6 +2335,9 @@ function openSavedAnalysis(id) {
       if (!j.success || !j.analysis) throw new Error(j.error || 'Not found');
       var a = j.analysis;
       lastReport = { data: a.data, meta: { model: a.model, when: a.createdAt, respondents: a.respondents || [] } };
+      lastAnalysisProject = a.projectSlug || lastAnalysisProject;
+      generatedDocs = {}; // different analysis: clear prior deliverables
+      persistWorkspace();
       renderReport(lastReport);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     })
@@ -2352,6 +2361,42 @@ var lastAnalysisProject = '';
 var lastDeliverables = ['leaderNav','summary'];
 var generatedDocs = {};        // key -> { type:'html', html, fileBase } | { type:'deck', slides, project, fileBase }
 var currentPreviewKey = null;
+var workspaceSavedAt = '';     // when the cached workspace was last written (local)
+
+// ── Local persistence (free, instant): cache analysis + generated deliverables ──
+// so a page refresh never forces regeneration (and never re-spends API calls).
+function persistWorkspace() {
+  try {
+    localStorage.setItem('cw4c_workspace', JSON.stringify({
+      savedAt: new Date().toISOString(),
+      lastReport: lastReport,
+      lastAnalysisResponses: lastAnalysisResponses,
+      lastAnalysisProject: lastAnalysisProject,
+      lastDeliverables: lastDeliverables,
+      generatedDocs: generatedDocs
+    }));
+    workspaceSavedAt = new Date().toISOString();
+  } catch (e) { /* quota or serialization error: skip silently */ }
+}
+function restoreWorkspace() {
+  try {
+    var raw = localStorage.getItem('cw4c_workspace'); if (!raw) return;
+    var p = JSON.parse(raw);
+    if (p.lastReport) lastReport = p.lastReport;
+    if (p.lastAnalysisResponses) lastAnalysisResponses = p.lastAnalysisResponses;
+    if (p.lastAnalysisProject != null) lastAnalysisProject = p.lastAnalysisProject;
+    if (p.lastDeliverables) lastDeliverables = p.lastDeliverables;
+    if (p.generatedDocs) generatedDocs = p.generatedDocs;
+    workspaceSavedAt = p.savedAt || '';
+    if (lastReport) { try { renderReport(lastReport); } catch (e) {} }
+  } catch (e) {}
+}
+function clearWorkspace() {
+  if (!confirm('Clear the locally saved analysis and generated deliverables from this browser? The centrally saved analyses are not affected.')) return;
+  try { localStorage.removeItem('cw4c_workspace'); } catch (e) {}
+  generatedDocs = {}; workspaceSavedAt = '';
+  renderDelivCards(); renderDelivContext();
+}
 
 var DELIVERABLES = [
   { key:'leaderNav', title:'Leader Navigation Plan', fmt:'PDF · client-branded', audience:'Client-facing',
@@ -2371,7 +2416,7 @@ function enterDeliverables() {
     .then(function(r){ return r.json(); })
     .then(function(j){ if (j.success) allProjects = j.projects || []; })
     .catch(function(){})
-    .then(function(){ buildDelivProjectDropdown(); renderDelivContext(); renderDelivCards(); });
+    .then(function(){ buildDelivProjectDropdown(); renderDelivContext(); refreshSharedDeliverables(); });
 }
 
 function buildDelivProjectDropdown() {
@@ -2390,7 +2435,7 @@ function getDelivProject() {
   return allProjects.find(function(p){ return p.slug === slug; }) || null;
 }
 
-function onDelivProjectChange() { renderDelivContext(); renderDelivCards(); }
+function onDelivProjectChange() { renderDelivContext(); refreshSharedDeliverables(); }
 
 function renderDelivContext() {
   var ctx = document.getElementById('deliv-context');
@@ -2401,9 +2446,13 @@ function renderDelivContext() {
   }
   ctx.className = 'deliv-context';
   var p = getDelivProject();
+  var nGen = Object.keys(generatedDocs).filter(function(k){ return k !== '_workshopSlug'; }).length;
+  var savedNote = workspaceSavedAt
+    ? ' Saved locally on this browser at ' + fmtDateFull(workspaceSavedAt) + (nGen ? ' (' + nGen + ' deliverable item(s) cached, no regeneration needed)' : '') + '.'
+    : '';
   ctx.innerHTML = 'Using the latest analysis (' + lastReport.meta.respondents.length + ' respondents, ' + esc(lastReport.meta.model) + '). ' +
     'Branding: ' + (p ? esc(p.projectName || p.slug) + (p.clientName ? ' · ' + esc(p.clientName) : '') : 'Cardwell (no client project selected)') + '. ' +
-    'Make sure your Anthropic API key is set in the Analysis tab.';
+    'Make sure your Anthropic API key is set in the Analysis tab.' + savedNote;
 }
 
 function renderDelivCards() {
@@ -2411,18 +2460,80 @@ function renderDelivCards() {
   grid.innerHTML = DELIVERABLES.map(function(d){
     var seld = lastDeliverables.indexOf(d.key) >= 0;
     var gen = generatedDocs[d.key];
+    var shared = sharedDelivMeta[d.key];
     var actions = '<button class="btn-action btn-primary-sm" onclick="generateDeliverable(\'' + d.key + '\')">' + (gen ? 'Regenerate' : 'Generate') + '</button>';
+    if (!gen && shared) actions += '<button class="btn-action btn-ghost-sm" onclick="loadSharedDeliverable(\'' + d.key + '\')">↓ Load shared</button>';
     if (gen) actions += '<button class="btn-action btn-ghost-sm" onclick="previewDeliverable(\'' + d.key + '\')">Preview</button>' +
                         '<button class="btn-action btn-ghost-sm" onclick="downloadDeliverable(\'' + d.key + '\')">⬇ Download</button>';
+    var sharedLine = shared
+      ? '<div class="dcard-shared">🔗 Shared · last saved by ' + esc(shared.updatedBy || 'Advisor') + ' on ' + fmtDateFull(shared.updatedAt) + '</div>'
+      : '';
+    var statusInit = gen ? '✓ Ready. Preview, then download.' : (shared ? 'A shared version exists. Click Load shared.' : '');
     return '<div class="dcard' + (seld ? ' sel' : '') + '">' +
       '<div class="dcard-top"><span class="dcard-title">' + esc(d.title) + '</span>' +
       '<span class="dcard-aud ' + (d.audience === 'Internal' ? 'aud-internal' : 'aud-client') + '">' + d.audience + '</span></div>' +
       '<div class="dcard-fmt">' + esc(d.fmt) + (seld ? ' · selected' : '') + '</div>' +
       '<div class="dcard-desc">' + esc(d.desc) + '</div>' +
+      sharedLine +
       '<div class="dcard-actions">' + actions + '</div>' +
-      '<div class="dcard-status" id="dstatus-' + d.key + '">' + (gen ? '✓ Generated. Preview, then download.' : '') + '</div>' +
+      '<div class="dcard-status" id="dstatus-' + d.key + '">' + statusInit + '</div>' +
     '</div>';
   }).join('');
+}
+
+// ── Shared deliverables (central source of truth across advisors) ───────────────
+var sharedDelivMeta = {}; // type -> { updatedBy, updatedAt, title }
+
+function advisorName() {
+  var n = localStorage.getItem('cw4c_advisor');
+  if (!n) { n = (prompt('Your name (so shared work is attributed to you):', '') || '').trim(); if (n) localStorage.setItem('cw4c_advisor', n); }
+  return n || 'Advisor';
+}
+function delivDef(key) { return DELIVERABLES.find(function(d){ return d.key === key; }) || {}; }
+
+function saveDeliverableToShared(key) {
+  var project = getDelivProject();
+  if (!project || !generatedDocs[key]) return; // sharing requires a client project
+  var def = delivDef(key);
+  var body = { type: 'saveDeliverable', token: projToken(), deliverable: {
+    projectSlug: project.slug, type: key, title: def.title || key, fmt: def.fmt || '', audience: def.audience || '',
+    updatedBy: advisorName(), payload: JSON.stringify(generatedDocs[key])
+  }};
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) { sharedDelivMeta[key] = { updatedBy: j.updatedBy, updatedAt: j.updatedAt, title: def.title }; renderDelivCards(); renderDelivContext(); }
+      else dStatus(key, 'Saved locally; shared save failed: ' + (j.error || ''), 'err');
+    })
+    .catch(function(){ dStatus(key, 'Saved locally; shared save failed (network).', 'err'); });
+}
+
+function refreshSharedDeliverables() {
+  sharedDelivMeta = {};
+  var project = getDelivProject();
+  if (!project) { renderDelivCards(); return; }
+  fetch(ENDPOINT_URL + '?action=listDeliverables&slug=' + encodeURIComponent(project.slug) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) (j.deliverables || []).forEach(function(d){ sharedDelivMeta[d.type] = { updatedBy: d.updatedBy, updatedAt: d.updatedAt, title: d.title }; });
+      renderDelivCards(); renderDelivContext();
+    })
+    .catch(function(){ renderDelivCards(); });
+}
+
+function loadSharedDeliverable(key) {
+  var project = getDelivProject(); if (!project) return;
+  dStatus(key, 'Loading shared version…', '');
+  fetch(ENDPOINT_URL + '?action=getDeliverable&slug=' + encodeURIComponent(project.slug) + '&type=' + encodeURIComponent(key) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success || !j.deliverable) throw new Error(j.error || 'Not found');
+      generatedDocs[key] = JSON.parse(j.deliverable.payload);
+      persistWorkspace();
+      dStatus(key, '✓ Loaded shared version (saved by ' + (j.deliverable.updatedBy || 'Advisor') + '). Preview, then download.', 'ok');
+      renderDelivCards();
+    })
+    .catch(function(e){ dStatus(key, 'Could not load shared version: ' + e.message, 'err'); });
 }
 
 function dStatus(key, msg, cls) {
@@ -2568,7 +2679,7 @@ function genLeaderNav(project) {
   anthropicComplete(prompt, 4500).then(function(text){
     var body = stripFrag(text);
     generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Leader Navigation Plan', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'LeaderNavigationPlan') };
-    dStatus('leaderNav','✓ Generated. Preview, then download.','ok'); renderDelivCards();
+    dStatus('leaderNav','✓ Generated. Preview, then download.','ok'); persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
   }).catch(function(e){ dStatus('leaderNav', e.message, 'err'); });
 }
 
@@ -2588,7 +2699,7 @@ function genSummary(project) {
   anthropicComplete(prompt, 7000).then(function(text){
     var body = stripFrag(text);
     generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Summary of Findings', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SummaryOfFindings') };
-    dStatus('summary','✓ Generated. Preview, then download.','ok'); renderDelivCards();
+    dStatus('summary','✓ Generated. Preview, then download.','ok'); persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
   }).catch(function(e){ dStatus('summary', e.message, 'err'); });
 }
 
@@ -2619,6 +2730,8 @@ function genWorkshop(project, which) {
     generatedDocs._workshopSlug = project.slug;
     dStatus('runOfShow','✓ Generated. Preview, then download.','ok');
     dStatus('deck','✓ Generated. Preview, then download.','ok');
+    persistWorkspace();
+    saveDeliverableToShared('runOfShow'); saveDeliverableToShared('deck');
     renderDelivCards();
   }).catch(function(e){ dStatus(which, e.message, 'err'); });
 }
