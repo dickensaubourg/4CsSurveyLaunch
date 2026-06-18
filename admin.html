@@ -741,6 +741,8 @@
   }
   .btn-run:hover { background: var(--blue-light); }
   .btn-run:disabled { background: var(--gray-light); color: var(--gray-mid); cursor: not-allowed; }
+  .btn-run.stopping { background: var(--red); }
+  .btn-run.stopping:hover { background: #b91c1c; }
 
   .cfg-divider {
     display: flex; align-items: center; gap: 10px;
@@ -943,6 +945,9 @@
   .dcard-fmt { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 7px; }
   .dcard-desc { font-size: 12.5px; color: var(--gray-mid); line-height: 1.55; flex: 1; margin-bottom: 14px; }
   .dcard-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stop-btn { background: var(--red); color: #fff; }
+  .stop-btn:hover { background: #b91c1c; }
+  .bp-archive-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-mid); margin-bottom: 6px; }
   .dcard-shared { font-size: 11px; color: #047857; background: #ecfdf5; border-radius: 6px; padding: 5px 9px; margin-bottom: 10px; }
   .dcard-status { font-size: 11px; color: var(--gray-mid); margin-top: 8px; min-height: 14px; }
   .dcard-status.ok { color: #047857; }
@@ -1400,6 +1405,17 @@
 
       <div class="deliv-grid" id="deliv-grid"></div>
       <div class="export-note" style="margin-top:14px">Every document is a draft for the Cardwell project team to review against brand and project outcomes before sending. No em dashes are used in generated content.</div>
+
+      <div class="panel-card" style="margin-top:20px">
+        <div class="panel-card-head">
+          <span class="panel-card-title">Claude build packet (.md): builds all four Office files</span>
+          <button class="btn-action btn-primary-sm" onclick="generateBuildPacket()">⬇ Generate build packet</button>
+        </div>
+        <div class="panel-card-body">
+          <div class="export-note" style="margin:0 0 12px">One Markdown file with the brand spec, parameters, analysis, verbatim responses, and the workshop document, plus build instructions. Download it and upload to Claude (Cowork), then ask it to build all four deliverables as Word and PowerPoint. Each generated packet is archived below; a new version is kept whenever the project parameters change.</div>
+          <div id="bp-archive"><div class="state-sub" style="padding:8px 0">Select a client project to see its archived build packets.</div></div>
+        </div>
+      </div>
     </div><!-- /view-deliverables -->
 
   </div>
@@ -2001,7 +2017,10 @@ function buildAnalysisPrompt(selected) {
 }
 
 // ── Run analysis ────────────────────────────────────────────────────────────
+var analysisAbort = null;
 function runAnalysis() {
+  // While a run is in progress this same button acts as Stop.
+  if (analysisAbort) { analysisAbort.abort(); return; }
   var key = (document.getElementById('api-key').value || '').trim();
   var model = document.getElementById('model-select').value;
   var selected = allResponses.filter(function(r){ return selectedIds[r.rowId]; });
@@ -2012,20 +2031,23 @@ function runAnalysis() {
   if (!key) { showRunError('Please enter your Anthropic API key.'); return; }
   if (!selected.length) { showRunError('Please select at least one response to analyze.'); return; }
 
+  analysisAbort = new AbortController();
   var btn = document.getElementById('btn-run');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Analyzing ' + selected.length + ' response' + (selected.length !== 1 ? 's' : '') + '…';
+  btn.disabled = false;                 // keep clickable so it can Stop
+  btn.classList.add('stopping');
+  btn.innerHTML = '<span class="spinner"></span> Stop analysis';
 
   document.getElementById('report-area').innerHTML =
     '<div class="panel-card"><div class="state-box"><div class="big-spinner"></div>' +
     '<div class="state-title" style="margin-top:18px">Analyzing responses…</div>' +
-    '<div class="state-sub">Reading ' + selected.length + ' verbatim submission' + (selected.length !== 1 ? 's' : '') + ' across all 12 questions.</div>' +
+    '<div class="state-sub">Reading ' + selected.length + ' verbatim submission' + (selected.length !== 1 ? 's' : '') + ' across all 12 questions. Click Stop analysis to cancel and make changes.</div>' +
     '</div></div>';
 
   var prompt = buildAnalysisPrompt(selected);
 
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: analysisAbort.signal,
     headers: {
       'content-type': 'application/json',
       'x-api-key': key,
@@ -2070,6 +2092,14 @@ function runAnalysis() {
     renderReport(lastReport);
   })
   .catch(function(err){
+    if (err && err.name === 'AbortError') {
+      document.getElementById('report-area').innerHTML =
+        '<div class="panel-card"><div class="report-placeholder">' +
+        '<div class="state-icon">✦</div>' +
+        '<div class="state-title">Analysis stopped</div>' +
+        '<div class="state-sub">Nothing was saved. Adjust your responses, model, or deliverables and run again.</div></div></div>';
+      return;
+    }
     document.getElementById('report-area').innerHTML =
       '<div class="panel-card"><div class="report-placeholder">' +
       '<div class="state-icon">⚠️</div>' +
@@ -2078,7 +2108,9 @@ function runAnalysis() {
     showRunError(err.message);
   })
   .then(function(){
+    analysisAbort = null;
     var b = document.getElementById('btn-run');
+    b.classList.remove('stopping');
     b.disabled = false;
     b.innerHTML = '✦ Run Analysis';
     refreshRunState();
@@ -2362,6 +2394,7 @@ var lastDeliverables = ['leaderNav','summary'];
 var generatedDocs = {};        // key -> { type:'html', html, fileBase } | { type:'deck', slides, project, fileBase }
 var currentPreviewKey = null;
 var workspaceSavedAt = '';     // when the cached workspace was last written (local)
+var delivAbort = {};           // key -> AbortController for an in-flight generation
 
 // ── Local persistence (free, instant): cache analysis + generated deliverables ──
 // so a page refresh never forces regeneration (and never re-spends API calls).
@@ -2416,7 +2449,7 @@ function enterDeliverables() {
     .then(function(r){ return r.json(); })
     .then(function(j){ if (j.success) allProjects = j.projects || []; })
     .catch(function(){})
-    .then(function(){ buildDelivProjectDropdown(); renderDelivContext(); refreshSharedDeliverables(); });
+    .then(function(){ buildDelivProjectDropdown(); renderDelivContext(); refreshSharedDeliverables(); refreshBuildArchive(); });
 }
 
 function buildDelivProjectDropdown() {
@@ -2435,7 +2468,7 @@ function getDelivProject() {
   return allProjects.find(function(p){ return p.slug === slug; }) || null;
 }
 
-function onDelivProjectChange() { renderDelivContext(); refreshSharedDeliverables(); }
+function onDelivProjectChange() { renderDelivContext(); refreshSharedDeliverables(); refreshBuildArchive(); }
 
 function renderDelivContext() {
   var ctx = document.getElementById('deliv-context');
@@ -2461,14 +2494,20 @@ function renderDelivCards() {
     var seld = lastDeliverables.indexOf(d.key) >= 0;
     var gen = generatedDocs[d.key];
     var shared = sharedDelivMeta[d.key];
-    var actions = '<button class="btn-action btn-primary-sm" onclick="generateDeliverable(\'' + d.key + '\')">' + (gen ? 'Regenerate' : 'Generate') + '</button>';
-    if (!gen && shared) actions += '<button class="btn-action btn-ghost-sm" onclick="loadSharedDeliverable(\'' + d.key + '\')">↓ Load shared</button>';
-    if (gen) actions += '<button class="btn-action btn-ghost-sm" onclick="previewDeliverable(\'' + d.key + '\')">Preview</button>' +
-                        '<button class="btn-action btn-ghost-sm" onclick="downloadDeliverable(\'' + d.key + '\')">⬇ Download</button>';
+    var busy = !!delivAbort[d.key];
+    var actions;
+    if (busy) {
+      actions = '<button class="btn-action stop-btn" onclick="generateDeliverable(\'' + d.key + '\')">■ Stop</button>';
+    } else {
+      actions = '<button class="btn-action btn-primary-sm" onclick="generateDeliverable(\'' + d.key + '\')">' + (gen ? 'Regenerate' : 'Generate') + '</button>';
+      if (!gen && shared) actions += '<button class="btn-action btn-ghost-sm" onclick="loadSharedDeliverable(\'' + d.key + '\')">↓ Load shared</button>';
+      if (gen) actions += '<button class="btn-action btn-ghost-sm" onclick="previewDeliverable(\'' + d.key + '\')">Preview</button>' +
+                          '<button class="btn-action btn-ghost-sm" onclick="downloadDeliverable(\'' + d.key + '\')">⬇ Download</button>';
+    }
     var sharedLine = shared
       ? '<div class="dcard-shared">🔗 Shared · last saved by ' + esc(shared.updatedBy || 'Advisor') + ' on ' + fmtDateFull(shared.updatedAt) + '</div>'
       : '';
-    var statusInit = gen ? '✓ Ready. Preview, then download.' : (shared ? 'A shared version exists. Click Load shared.' : '');
+    var statusInit = busy ? 'Generating… click Stop to cancel.' : (gen ? '✓ Ready. Preview, then download.' : (shared ? 'A shared version exists. Click Load shared.' : ''));
     return '<div class="dcard' + (seld ? ' sel' : '') + '">' +
       '<div class="dcard-top"><span class="dcard-title">' + esc(d.title) + '</span>' +
       '<span class="dcard-aud ' + (d.audience === 'Internal' ? 'aud-internal' : 'aud-client') + '">' + d.audience + '</span></div>' +
@@ -2536,18 +2575,184 @@ function loadSharedDeliverable(key) {
     .catch(function(e){ dStatus(key, 'Could not load shared version: ' + e.message, 'err'); });
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// CLAUDE BUILD PACKET (.md): one file that builds all four Office deliverables
+// ══════════════════════════════════════════════════════════════════════════════
+function bpHash_(s) { var h = 5381, i = s.length; while (i) { h = (h * 33) ^ s.charCodeAt(--i); } return (h >>> 0).toString(36); }
+
+function compileBuildPacket(project) {
+  var client = project.clientName || '', pname = project.projectName || project.slug;
+  var c1 = project.color1 || '#254deb', c2 = project.color2 || '#00007b';
+  var leader = project.seniorLeaderName || '', leaderTitle = project.seniorLeaderTitle || '';
+  var nFac = parseInt(project.facilitatorCount, 10) || 2;
+  var workshop = project.workshopDocText || '';
+  var respList = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
+    : allResponses.filter(function(r){ return projKeyOf(r) === project.slug; });
+  var analysisJson = lastReport ? JSON.stringify(lastReport.data, null, 2) : '{}';
+  var model = lastReport ? lastReport.meta.model : '';
+  var sig = bpHash_([client, pname, c1, c2, leader, leaderTitle, nFac, model,
+    (workshop || '').length, (analysisJson || '').length, respList.length,
+    respList.map(function(r){ return r.fullName; }).join('|')].join('::'));
+  var summary = respList.length + ' respondents · ' + nFac + ' facilitator(s) · leader: ' + (leader || 'not set') +
+    ' · workshop doc: ' + (workshop ? 'yes' : 'no') + ' · colors ' + c1 + '/' + c2;
+
+  var L = [];
+  L.push('# Cardwell 4C · Workshop Deliverables Build Packet');
+  L.push('## ' + pname + (client ? ': ' + client : ''));
+  L.push('Generated ' + fmtDateFull(new Date().toISOString()) + ' · parameters signature `' + sig + '`');
+  L.push('');
+  L.push('## 0. How to use this packet (read first)');
+  L.push('Upload this entire Markdown file to Claude (Cowork) and say: "Build all four Cardwell deliverables from this packet as Microsoft Office files." Claude produces four files, using the docx and pptx skills:');
+  L.push('1. Leader Navigation Plan: Word (.docx), client-branded');
+  L.push('2. Summary of Findings: Word (.docx), client-branded');
+  L.push('3. Workshop Run of Show: Word (.docx), Cardwell-branded (internal)');
+  L.push('4. Workshop Deck: PowerPoint (.pptx), client-branded');
+  L.push('Build each exactly per sections 4 to 7, using ONLY the data embedded in this file. Do not invent content beyond what is provided.');
+  L.push('');
+  L.push('## 1. Global rules (apply to all four)');
+  L.push('- Do NOT use em dashes anywhere. Use commas, colons, parentheses, or periods.');
+  L.push('- Client branding on the Leader Navigation Plan, Summary of Findings, and Deck. Cardwell branding (navy) on the Run of Show (internal).');
+  L.push('- Put a footer on every file: "Cardwell · The Cardwell Way · 4C Model. Confidential. Draft for Cardwell project-team review."');
+  L.push('- Banner on each document: a gradient of the two client brand colors, the white Cardwell wordmark idea on the left, a white chip with the client name, then the document title and client/project. Keep text legible (dark scrim on the left).');
+  L.push('- Positioning line where a tagline fits: "Strategy is easy. Executing isn\'t."');
+  L.push('- The Summary of Findings is verbatim only (see its rules). Never paraphrase or interpret survey responses.');
+  L.push('');
+  L.push('## 2. Brand spec');
+  L.push('- Client brand colors: color1 ' + c1 + ', color2 ' + c2 + ' (use for banners, headings, accents).');
+  L.push('- Cardwell palette: Blue #254deb, Navy #00007b, Navy Dark #0b1747, Off-white #F5F5F7.');
+  L.push('- Coding colors (Summary + analysis visuals): convergence green #1E7A46, divergence auburn #9A3324, differentiated purple #6B21A8.');
+  L.push('- Typography: Inter for headings and body; Cormorant Garamond (fallback Georgia) for display titles. In Office use Arial for body and Georgia for display.');
+  L.push('');
+  L.push('## 3. Project parameters');
+  L.push('- Client: ' + (client || '(none)'));
+  L.push('- Project: ' + pname);
+  L.push('- Senior leader: ' + (leader || '(not set)') + (leaderTitle ? ', ' + leaderTitle : ''));
+  L.push('- Facilitators: ' + nFac);
+  L.push('- Brand colors: ' + c1 + ' and ' + c2);
+  L.push('- Analysis model: ' + (model || '(none)'));
+  L.push('- Client logo: not embedded. Use a white chip with the client name on banners.');
+  L.push('');
+  L.push('## 4. Deliverable 1: Leader Navigation Plan (Word .docx, client-branded)');
+  L.push('Audience: the senior leader (' + (leader || 'the leader') + ') and the Cardwell engagement lead only. Purpose: help the leader shape their own development plan to lead the strategy.');
+  L.push('Build from the Analysis JSON below. Structure:');
+  L.push('- A short opening paragraph addressed to the leader by name.');
+  L.push('- "Landmines to navigate": hidden risks and tensions (from divergence, watch items, standout concerns) that could derail the strategy. For each: what it is, why it is dangerous, what the leader should do. Style each as an auburn callout.');
+  L.push('- "Guideposts to lean on": sources of strength and alignment (from convergence and takeaways). For each: what it is and how to use it. Style each as a green callout.');
+  L.push('- "Shaping your development plan": 3 to 5 reflective prompts as a worksheet box.');
+  L.push('Do not invent facts beyond the analysis. Direct, supportive, executive tone.');
+  L.push('');
+  L.push('### Source: Analysis (JSON)');
+  L.push('```json');
+  L.push(analysisJson);
+  L.push('```');
+  L.push('');
+  L.push('## 5. Deliverable 2: Summary of Findings (Word .docx, client-branded)');
+  L.push('Audience: client leadership. This reports the team\'s survey input as facts, organized into Convergence, Divergence, and Standout perspectives.');
+  L.push('CRITICAL: Do NOT interpret, summarize, paraphrase, rank, or editorialize. Use ONLY exact verbatim quotes from the responses below, each attributed to the respondent name. Cluster quotes under the three headings. Add no analysis sentences. Leave a "Facilitator notes" blank box at the end of each of the three sections.');
+  L.push('End with a section "Talking with your team": one short paragraph of general best-practice guidance (guidance only, not interpretation of the data), then a worksheet box "My plan" with prompts: what I will say, what I will ask, what I will commit to, how I will follow up.');
+  L.push('');
+  L.push('### Source: Verbatim responses');
+  L.push('```');
+  L.push(respList.length ? responsesVerbatimText(respList) : '(no responses available)');
+  L.push('```');
+  L.push('');
+  L.push('## 6. Deliverable 3: Workshop Run of Show (Word .docx, Cardwell internal)');
+  L.push('Audience: Cardwell facilitation team only. There are ' + nFac + ' facilitator(s).');
+  L.push('Use the workshop document below VERBATIM. Do not change, add, or remove any day, date, time, objective, or outcome.');
+  L.push('For each day or session in the document: copy the heading (day, date, time) verbatim, the session description, the Objectives list verbatim, and the Outcomes list verbatim. Then add a timed activities table with columns: Time, Activity, Drives (the outcome it serves), Lead (which facilitator leads), Support (what the other ' + (nFac - 1 >= 1 ? (nFac - 1) : 0) + ' facilitator(s) do), Slides (the supporting deck slide numbers from Deliverable 4). Recommend activities that drive the stated objectives and outcomes.');
+  L.push('');
+  L.push('### Source: Workshop document (verbatim)');
+  L.push('```');
+  L.push(workshop || '(no workshop document on file for this project)');
+  L.push('```');
+  L.push('');
+  L.push('## 7. Deliverable 4: Workshop Deck (PowerPoint .pptx, client-branded)');
+  L.push('Audience: workshop leaders and participants. The deck complements the Run of Show; each slide supports a moment in it, and the Run of Show references these slide numbers. Keep slide numbering consistent with the Slides column in the Run of Show.');
+  L.push('Build a title slide (project and client, navy/client-color background) then one slide per run-of-show moment with a short title and 2 to 5 bullets. Use the client brand colors for slide headers and a Cardwell footer.');
+  L.push('Base the slide content on the workshop document (section 6) and, where useful, the analysis (section 4). Do not use em dashes.');
+  L.push('');
+  L.push('## 8. Appendix: the 12 questions and 4C framing');
+  SECTIONS.forEach(function(s){
+    L.push('### ' + s.code + ' · ' + s.title + ': ' + s.sub);
+    L.push('Facilitation lens: ' + s.facilitator);
+    s.questions.forEach(function(q){ L.push('- ' + q.num + ': ' + q.text); });
+    L.push('');
+  });
+  L.push('---');
+  L.push('Cardwell · The Cardwell Way · 4C Model. Confidential build packet. Every generated deliverable is a draft for the Cardwell project team to review before it reaches a client.');
+  return { md: L.join('\n'), sig: sig, summary: summary, fileBase: 'Cardwell_' + project.slug + '_BuildPacket_' + stamp() };
+}
+
+function generateBuildPacket() {
+  var project = getDelivProject();
+  if (!project) { alert('Select a client project first (the packet is built from its parameters and workshop).'); return; }
+  if (!lastReport) { alert('Run or open an analysis first so the packet includes it.'); return; }
+  var pkt = compileBuildPacket(project);
+  // download the .md
+  var blob = new Blob([pkt.md], { type: 'text/markdown;charset=utf-8;' });
+  var url = URL.createObjectURL(blob); var a = document.createElement('a');
+  a.href = url; a.download = pkt.fileBase + '.md'; a.click(); URL.revokeObjectURL(url);
+  // archive centrally (new version only if parameters changed)
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ type: 'saveBuildPacket', token: projToken(), packet: {
+      projectSlug: project.slug, createdBy: advisorName(), paramsSig: pkt.sig, summary: pkt.summary, payload: pkt.md } }) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) {
+        alert(j.deduped
+          ? 'Downloaded. This matches the latest archived version (no parameters changed), so no new archive version was added.'
+          : 'Downloaded and archived as a new version. Upload the .md to Claude and ask it to build all four deliverables.');
+        refreshBuildArchive();
+      } else alert('Downloaded, but archiving failed: ' + (j.error || ''));
+    })
+    .catch(function(){ alert('Downloaded, but archiving failed (network).'); });
+}
+
+function refreshBuildArchive() {
+  var el = document.getElementById('bp-archive'); if (!el) return;
+  var project = getDelivProject();
+  if (!project) { el.innerHTML = '<div class="state-sub" style="padding:8px 0">Select a client project to see its archived build packets.</div>'; return; }
+  fetch(ENDPOINT_URL + '?action=listBuildPackets&slug=' + encodeURIComponent(project.slug) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var list = (j && j.packets) || [];
+      if (!list.length) { el.innerHTML = '<div class="state-sub" style="padding:8px 0">No archived packets yet for this project.</div>'; return; }
+      el.innerHTML = '<div class="bp-archive-head">Archived versions (' + list.length + ')</div>' + list.map(function(p){
+        return '<div class="proj-row">' +
+          '<div class="proj-info"><div class="proj-title">' + fmtDateFull(p.createdAt) + '</div>' +
+          '<div class="proj-meta">by ' + esc(p.createdBy || 'Advisor') + ' · ' + esc(p.summary || '') + '</div></div>' +
+          '<div class="proj-row-actions"><button class="btn-icon" title="Download .md" onclick="downloadArchivedPacket(\'' + esc(p.id) + '\')">⬇</button></div>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div class="state-sub" style="padding:8px 0">Could not load the archive.</div>'; });
+}
+
+function downloadArchivedPacket(id) {
+  fetch(ENDPOINT_URL + '?action=getBuildPacket&id=' + encodeURIComponent(id) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success || !j.packet) throw new Error(j.error || 'Not found');
+      var blob = new Blob([j.packet.payload], { type: 'text/markdown;charset=utf-8;' });
+      var url = URL.createObjectURL(blob); var a = document.createElement('a');
+      a.href = url; a.download = 'Cardwell_' + j.packet.projectSlug + '_BuildPacket_' + (j.packet.createdAt || '').slice(0,10) + '.md'; a.click(); URL.revokeObjectURL(url);
+    })
+    .catch(function(e){ alert('Could not download: ' + e.message); });
+}
+
 function dStatus(key, msg, cls) {
   var el = document.getElementById('dstatus-' + key);
   if (el) { el.textContent = msg; el.className = 'dcard-status' + (cls ? ' ' + cls : ''); }
 }
 
 // ── Anthropic call (reuses the Analysis tab key + model) ───────────────────────
-function anthropicComplete(prompt, maxTokens) {
+function anthropicComplete(prompt, maxTokens, signal) {
   var key = (document.getElementById('api-key').value || '').trim();
   if (!key) return Promise.reject(new Error('Enter your Anthropic API key in the Analysis tab first.'));
   var model = document.getElementById('model-select').value;
   return fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: signal,
     headers: { 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
     body: JSON.stringify({ model: model, max_tokens: maxTokens || 4000, messages: [{ role:'user', content: prompt }] })
   }).then(function(res){ return res.json().then(function(b){ return { ok:res.ok, status:res.status, body:b }; }); })
@@ -2643,6 +2848,8 @@ var NO_DASH = 'Do not use em dashes anywhere in your output. Use commas, colons,
 
 // ── Generate one deliverable ───────────────────────────────────────────────────
 function generateDeliverable(key) {
+  // While a generation is in flight, this same button acts as Stop (aborts the call).
+  if (delivAbort[key]) { delivAbort[key].abort(); return; }
   var project = getDelivProject();
   if (key === 'leaderNav') return genLeaderNav(project);
   if (key === 'summary')   return genSummary(project);
@@ -2659,7 +2866,6 @@ function genLeaderNav(project) {
   if (!lastReport) { dStatus('leaderNav','Run or open an analysis first.','err'); return; }
   var leaderName = (project && project.seniorLeaderName) || '';
   var leaderTitle = (project && project.seniorLeaderTitle) || '';
-  dStatus('leaderNav','Generating…','');
   var prompt = 'You are creating a confidential Leader Navigation Plan for ' +
     (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior leader') +
     (project && project.clientName ? ' at ' + project.clientName : '') + '.\n' +
@@ -2676,18 +2882,24 @@ function genLeaderNav(project) {
     '<div class="callout guidepost"><h3>Short title</h3><p>what it is and how to use it</p></div>; ' +
     '<p>; <ul><li>; and for the development section a <div class="worksheet"><h3>Reflect</h3><ul><li>prompt</li></ul></div>.\n\n' +
     'ANALYSIS JSON:\n' + JSON.stringify(lastReport.data);
-  anthropicComplete(prompt, 4500).then(function(text){
+  var c = new AbortController(); delivAbort.leaderNav = c; renderDelivCards();
+  anthropicComplete(prompt, 4500, c.signal).then(function(text){
     var body = stripFrag(text);
     generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Leader Navigation Plan', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'LeaderNavigationPlan') };
-    dStatus('leaderNav','✓ Generated. Preview, then download.','ok'); persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
-  }).catch(function(e){ dStatus('leaderNav', e.message, 'err'); });
+    delete delivAbort.leaderNav;
+    persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
+    dStatus('leaderNav','✓ Generated. Preview, then download.','ok');
+  }).catch(function(e){
+    delete delivAbort.leaderNav; renderDelivCards();
+    if (e && e.name === 'AbortError') dStatus('leaderNav','Generation stopped. Nothing saved, and no tokens are charged after you cancel.','');
+    else dStatus('leaderNav', e.message, 'err');
+  });
 }
 
 function genSummary(project) {
   var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
     : (project ? allResponses.filter(function(r){ return projKeyOf(r) === project.slug; }) : allResponses.slice());
   if (!list.length) { dStatus('summary','No responses available. Run an analysis or pick a project with responses.','err'); return; }
-  dStatus('summary','Generating…','');
   var prompt = 'You are creating a Summary of Findings for ' + (project && project.clientName ? project.clientName : 'the client') +
     (project && project.projectName ? ' (' + project.projectName + ')' : '') + '.\n' +
     'This reports the team\'s survey input as facts, organized into Convergence, Divergence, and Standout points.\n' +
@@ -2696,18 +2908,24 @@ function genSummary(project) {
     'Return ONLY an HTML fragment using ONLY: <h2> for the three headings exactly "Convergence", "Divergence", "Standout perspectives"; optional <h3> for a short theme label that is itself drawn from the respondents\' own words; <blockquote> for one verbatim quote; <p class="attr"> for the attribution (the respondent name) under each quote; and <div class="worksheet"><h3>Facilitator notes</h3></div> at the end of each of the three sections for live discussion.\n' +
     'Then a final section: <h2>Talking with your team</h2> with one <p> of plain, general best practice guidance on how the leader receiving this report should talk with their employees about the strategy (guidance only, not interpretation of the data), then <div class="worksheet"><h3>My plan</h3><ul><li>What I will say</li><li>What I will ask</li><li>What I will commit to</li><li>How I will follow up</li></ul></div>.\n\n' +
     'VERBATIM RESPONSES:\n' + responsesVerbatimText(list);
-  anthropicComplete(prompt, 7000).then(function(text){
+  var c = new AbortController(); delivAbort.summary = c; renderDelivCards();
+  anthropicComplete(prompt, 7000, c.signal).then(function(text){
     var body = stripFrag(text);
     generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Summary of Findings', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SummaryOfFindings') };
-    dStatus('summary','✓ Generated. Preview, then download.','ok'); persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
-  }).catch(function(e){ dStatus('summary', e.message, 'err'); });
+    delete delivAbort.summary;
+    persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
+    dStatus('summary','✓ Generated. Preview, then download.','ok');
+  }).catch(function(e){
+    delete delivAbort.summary; renderDelivCards();
+    if (e && e.name === 'AbortError') dStatus('summary','Generation stopped. Nothing saved, and no tokens are charged after you cancel.','');
+    else dStatus('summary', e.message, 'err');
+  });
 }
 
 function genWorkshop(project, which) {
   if (!project) { dStatus(which,'Select a client project (with an uploaded workshop document) first.','err'); return; }
   if (!project.workshopDocText) { dStatus(which,'This project has no workshop document. Add one in the project\'s Workshop Builder.','err'); return; }
   var n = parseInt(project.facilitatorCount, 10) || 2;
-  dStatus(which,'Generating Run of Show and deck…','');
   if (generatedDocs.runOfShow && generatedDocs.deck && generatedDocs._workshopSlug === project.slug) {
     dStatus(which,'✓ Generated. Preview, then download.','ok'); renderDelivCards(); return;
   }
@@ -2722,18 +2940,24 @@ function genWorkshop(project, which) {
     '{"slides":[{"n":1,"title":"...","bullets":["..."],"note":"optional short facilitator note"}],' +
     '"runOfShowHtml":"HTML fragment using only <h2> for each day or session heading (copy the day, date and time verbatim), <p class=\\"meta\\"> for date and time, <p> for the session description from the document, <h3>Objectives</h3><ul><li> verbatim, <h3>Outcomes</h3><ul><li> verbatim, then a <table> with header row Time, Activity, Drives, Lead, Support, Slides and one row per activity."}\n\n' +
     'WORKSHOP DOCUMENT (verbatim):\n' + project.workshopDocText;
-  anthropicComplete(prompt, 8000).then(function(text){
+  var c = new AbortController(); delivAbort.runOfShow = c; delivAbort.deck = c; renderDelivCards();
+  anthropicComplete(prompt, 8000, c.signal).then(function(text){
     var data = parseJsonLoose(text);
     if (!data || !data.runOfShowHtml || !data.slides) throw new Error('Model did not return the expected Run of Show and slides. Try again.');
     generatedDocs.runOfShow = { type:'html', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
     generatedDocs.deck = { type:'deck', slides: data.slides, project: project, fileBase: fileBaseFor(project,'WorkshopDeck') };
     generatedDocs._workshopSlug = project.slug;
-    dStatus('runOfShow','✓ Generated. Preview, then download.','ok');
-    dStatus('deck','✓ Generated. Preview, then download.','ok');
+    delete delivAbort.runOfShow; delete delivAbort.deck;
     persistWorkspace();
     saveDeliverableToShared('runOfShow'); saveDeliverableToShared('deck');
     renderDelivCards();
-  }).catch(function(e){ dStatus(which, e.message, 'err'); });
+    dStatus('runOfShow','✓ Generated. Preview, then download.','ok');
+    dStatus('deck','✓ Generated. Preview, then download.','ok');
+  }).catch(function(e){
+    delete delivAbort.runOfShow; delete delivAbort.deck; renderDelivCards();
+    if (e && e.name === 'AbortError') dStatus(which,'Generation stopped. Nothing saved, and no tokens are charged after you cancel.','');
+    else dStatus(which, e.message, 'err');
+  });
 }
 
 function stripFrag(t) {
