@@ -419,6 +419,25 @@
 
   .td-actions { text-align: right; white-space: nowrap; }
 
+  /* Select-and-move responses */
+  .th-check, .td-check { width: 34px; text-align: center; padding-left: 10px; padding-right: 4px; }
+  .td-check input, .th-check input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--blue, #254deb); }
+  tr.row-selected td { background: rgba(37,77,235,0.06); }
+
+  .move-bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 0 0 14px; padding: 11px 16px;
+    background: #eef2ff; border: 1px solid #c9d4ff; border-radius: 10px;
+  }
+  .move-bar-count { font-weight: 600; color: var(--navy, #00007b); font-size: 13px; }
+  .move-bar-label { font-size: 13px; color: var(--gray-mid, #5b6172); }
+  .move-bar-select {
+    font: inherit; font-size: 13px; padding: 7px 10px;
+    border: 1px solid #c9d4ff; border-radius: 7px; background: #fff;
+    color: var(--navy-dark, #0b1747); min-width: 240px; max-width: 360px; cursor: pointer;
+  }
+  .move-bar-status { font-size: 12.5px; color: var(--gray-mid, #5b6172); }
+
   .btn-icon {
     background: none; border: none; cursor: pointer;
     padding: 5px 7px; color: var(--gray-mid);
@@ -1136,12 +1155,26 @@
         </div>
       </div>
 
+      <!-- Move bar (appears when responses are selected) -->
+      <div class="move-bar" id="move-bar" style="display:none">
+        <span class="move-bar-count" id="move-bar-count">0 selected</span>
+        <span class="move-bar-label">Move to:</span>
+        <select class="move-bar-select" id="move-target"></select>
+        <button class="btn-action btn-primary-sm" id="move-bar-go" onclick="moveSelectedResponses()">Move</button>
+        <button class="btn-action btn-ghost-sm" onclick="clearRespSel()">Clear</button>
+        <span class="move-bar-status" id="move-bar-status"></span>
+      </div>
+
       <!-- Table -->
       <div class="table-card">
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
+                <th class="th-check">
+                  <input type="checkbox" id="resp-check-all" title="Select all shown"
+                         onclick="event.stopPropagation();toggleRespSelAll(this.checked)">
+                </th>
                 <th onclick="sortBy('fullName')" id="th-fullName">
                   Name <span class="sort-icon" id="sort-fullName">↕</span>
                 </th>
@@ -1158,7 +1191,7 @@
               </tr>
             </thead>
             <tbody id="table-body">
-              <tr><td colspan="7">
+              <tr><td colspan="8">
                 <div class="state-box"><div class="big-spinner"></div></div>
               </td></tr>
             </tbody>
@@ -1590,7 +1623,7 @@ function switchView(view) {
 // ── Load data ─────────────────────────────────────────────────────────────────
 function loadData() {
   document.getElementById('table-body').innerHTML =
-    '<tr><td colspan="7"><div class="state-box"><div class="big-spinner"></div></div></td></tr>';
+    '<tr><td colspan="8"><div class="state-box"><div class="big-spinner"></div></div></td></tr>';
   document.getElementById('table-footer-count').textContent = 'Loading…';
 
   var token = sessionStorage.getItem('cw4c_admin') || ADMIN_TOKEN;
@@ -1602,6 +1635,7 @@ function loadData() {
       updateStats();
       renderTable();
       renderSelectList();
+      ensureProjectsLoaded();
       document.getElementById('stat-refreshed').textContent = fmtTime(new Date());
       var badge = document.getElementById('topbar-badge');
       badge.textContent = allResponses.length + ' response' + (allResponses.length !== 1 ? 's' : '');
@@ -1612,7 +1646,7 @@ function loadData() {
         ? 'Error: ' + err.message
         : 'Set ENDPOINT_URL at the top of this file to connect to your Apps Script backend.';
       document.getElementById('table-body').innerHTML =
-        '<tr><td colspan="7"><div class="state-box">' +
+        '<tr><td colspan="8"><div class="state-box">' +
         '<div class="state-icon">⚠️</div>' +
         '<div class="state-title">Could not load responses</div>' +
         '<div class="state-sub">' + msg + '</div>' +
@@ -1659,16 +1693,22 @@ function renderTable() {
     return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 
+  lastFilteredRowIds = filtered.map(function(r){ return r.rowId; });
+
   var tbody = document.getElementById('table-body');
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="state-box">' +
+    tbody.innerHTML = '<tr><td colspan="8"><div class="state-box">' +
       '<div class="state-icon">' + (allResponses.length ? '🔍' : '📭') + '</div>' +
       '<div class="state-title">' + (allResponses.length ? 'No results for "' + esc(q) + '"' : 'No responses yet') + '</div>' +
       '<div class="state-sub">' + (allResponses.length ? 'Try a different name.' : 'Responses will appear here once leaders submit the survey.') + '</div>' +
       '</div></td></tr>';
   } else {
     tbody.innerHTML = filtered.map(function(r) {
-      return '<tr onclick="openModal(' + r.rowId + ')">' +
+      var checked = respSel[r.rowId] ? ' checked' : '';
+      var rowCls  = respSel[r.rowId] ? ' class="row-selected"' : '';
+      return '<tr' + rowCls + ' onclick="openModal(' + r.rowId + ')">' +
+        '<td class="td-check"><input type="checkbox"' + checked +
+          ' onclick="event.stopPropagation();toggleRespSel(' + r.rowId + ',this.checked,this)"></td>' +
         '<td class="td-name">' + esc(r.fullName || (r.first + ' ' + r.last)) + '</td>' +
         '<td class="td-project">' + projectCell(r) + '</td>' +
         '<td class="td-date">' + fmtDate(r.timestamp) + '</td>' +
@@ -1685,6 +1725,9 @@ function renderTable() {
 
   document.getElementById('table-footer-count').textContent =
     filtered.length + ' of ' + allResponses.length + ' response' + (allResponses.length !== 1 ? 's' : '');
+
+  syncCheckAll();
+  updateMoveBar();
 }
 
 function sortBy(key) {
@@ -1696,6 +1739,146 @@ function sortBy(key) {
   if (th)   th.classList.add('sorted');
   if (icon) icon.textContent = sortDir === -1 ? '↓' : '↑';
   renderTable();
+}
+
+// ── Move responses to a project ─────────────────────────────────────────────
+var respSel = {};              // { rowId: true } selection for the Responses table
+var lastFilteredRowIds = [];   // rowIds currently shown (post search/sort)
+
+function ensureProjectsLoaded() {
+  if (allProjects && allProjects.length) { populateMoveTarget(); return; }
+  fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (j.success) { allProjects = j.projects || []; } })
+    .catch(function(){})
+    .then(function(){ populateMoveTarget(); });
+}
+
+function populateMoveTarget() {
+  var sel = document.getElementById('move-target');
+  if (!sel) return;
+  var prev = sel.value;
+  var opts = '<option value="" disabled selected>Choose a destination…</option>';
+  (allProjects || []).slice().sort(function(a,b){
+    return (a.projectName||a.slug||'').toLowerCase() < (b.projectName||b.slug||'').toLowerCase() ? -1 : 1;
+  }).forEach(function(p){
+    var label = (p.projectName || p.slug) + (p.clientName ? ' (' + p.clientName + ')' : '');
+    opts += '<option value="proj:' + esc(p.slug) + '">' + esc(label) + '</option>';
+  });
+  opts += '<option value="__unassign">Unassigned (remove from project)</option>';
+  opts += '<option value="__new">+ New project…</option>';
+  sel.innerHTML = opts;
+  if (prev) { sel.value = prev; if (sel.value !== prev) sel.selectedIndex = 0; }
+}
+
+function toggleRespSel(rowId, on, el) {
+  if (on) respSel[rowId] = true; else delete respSel[rowId];
+  if (el) { var row = el.closest('tr'); if (row) row.classList.toggle('row-selected', !!on); }
+  syncCheckAll();
+  updateMoveBar();
+}
+
+function toggleRespSelAll(on) {
+  lastFilteredRowIds.forEach(function(id){ if (on) respSel[id] = true; else delete respSel[id]; });
+  renderTable();
+}
+
+function syncCheckAll() {
+  var all = document.getElementById('resp-check-all');
+  if (!all) return;
+  var shown = lastFilteredRowIds.length;
+  var picked = lastFilteredRowIds.filter(function(id){ return respSel[id]; }).length;
+  all.checked = shown > 0 && picked === shown;
+  all.indeterminate = picked > 0 && picked < shown;
+}
+
+function respSelCount() { return Object.keys(respSel).length; }
+
+function clearRespSel() {
+  respSel = {};
+  document.getElementById('move-bar-status').textContent = '';
+  renderTable();
+}
+
+function updateMoveBar() {
+  var bar = document.getElementById('move-bar');
+  if (!bar) return;
+  var n = respSelCount();
+  bar.style.display = n ? 'flex' : 'none';
+  if (n) document.getElementById('move-bar-count').textContent =
+    n + ' response' + (n !== 1 ? 's' : '') + ' selected';
+}
+
+function moveSelectedResponses() {
+  var ids = Object.keys(respSel).map(function(x){ return parseInt(x, 10); }).filter(Boolean);
+  if (!ids.length) { alert('Select at least one response first.'); return; }
+  var sel = document.getElementById('move-target');
+  var val = sel.value;
+  if (!val) { alert('Choose a destination project.'); return; }
+
+  var slug = '', client = '', projName = '';
+
+  if (val === '__unassign') {
+    if (!confirm('Remove ' + ids.length + ' response' + (ids.length !== 1 ? 's' : '') +
+      ' from their project? They will show as unassigned.')) return;
+  } else if (val === '__new') {
+    var pName = (prompt('New project name:') || '').trim();
+    if (!pName) return;
+    var cName = (prompt('Client name (optional):') || '').trim();
+    slug = slugify(pName);
+    if (!slug) { alert('Could not build a URL slug from that name.'); return; }
+    client = cName; projName = pName;
+    // Create the project record so it appears in Projects + has a survey URL.
+    var pPayload = { type: 'project', token: projToken(), project: {
+      slug: slug, clientName: client, projectName: projName,
+      color1: '#254deb', color2: '#00007b', logo: '', status: 'draft',
+      seniorLeaderName: '', seniorLeaderTitle: '', facilitatorCount: '2',
+      workshopDocName: '', workshopDocText: ''
+    }};
+    setMoveBusy(true, 'Creating project…');
+    fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(pPayload) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.success) throw new Error(j.error || 'Could not create project');
+        if (j.slug) slug = j.slug;
+        return doMove(ids, slug, client, projName);
+      })
+      .catch(function(e){ setMoveBusy(false); document.getElementById('move-bar-status').textContent = 'Error: ' + e.message; });
+    return;
+  } else if (val.indexOf('proj:') === 0) {
+    slug = val.slice(5);
+    var p = (allProjects || []).find(function(x){ return x.slug === slug; });
+    if (p) { client = p.clientName || ''; projName = p.projectName || ''; }
+  }
+
+  setMoveBusy(true, 'Moving…');
+  doMove(ids, slug, client, projName);
+}
+
+function doMove(ids, slug, client, projName) {
+  var payload = { type: 'moveResponses', token: projToken(),
+    rowIds: ids, projectSlug: slug, clientName: client, projectName: projName };
+  return fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success) throw new Error(j.error || 'Move failed');
+      // Update local copies so the table reflects the change without a full reload race.
+      allResponses.forEach(function(r){
+        if (ids.indexOf(r.rowId) !== -1) { r.projectSlug = slug; r.clientName = client; r.projectName = projName; }
+      });
+      respSel = {};
+      setMoveBusy(false);
+      var dest = slug ? (projName || slug) : 'Unassigned';
+      document.getElementById('move-bar-status').textContent = '✓ Moved ' + (j.moved || ids.length) + ' to ' + dest;
+      loadData();
+    })
+    .catch(function(e){ setMoveBusy(false); document.getElementById('move-bar-status').textContent = 'Error: ' + e.message; });
+}
+
+function setMoveBusy(busy, msg) {
+  var btn = document.getElementById('move-bar-go');
+  if (btn) { btn.disabled = busy; btn.textContent = busy ? 'Working…' : 'Move'; }
+  if (msg !== undefined) document.getElementById('move-bar-status').textContent = msg || '';
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -1752,6 +1935,7 @@ function deleteRow(rowId, name) {
       if (!json.success) throw new Error(json.error);
       allResponses = allResponses.filter(function(x){ return x.rowId !== rowId; });
       delete selectedIds[rowId];
+      delete respSel[rowId];
       updateStats();
       renderTable();
       renderSelectList();
