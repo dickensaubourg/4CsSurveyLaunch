@@ -470,6 +470,30 @@
   .lp-publish-status { font-size:12.5px; color:var(--gray-mid,#5b6172); }
   .danger-text { color:#9A3324; }
 
+  /* Analysis house-style rubric + editing */
+  .rubric-note { font-size:12.5px; color:var(--gray-mid,#5b6172); margin-bottom:10px; line-height:1.5; }
+  .rubric-scope { display:flex; gap:16px; margin-bottom:10px; font-size:13px; color:var(--navy-dark,#0b1747); }
+  .rubric-scope label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .rubric-actions { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .rubric-status { font-size:12px; color:var(--gray-mid,#5b6172); }
+  .rubric-effective { margin-top:10px; font-size:12px; color:var(--gray-mid,#5b6172); }
+  .rubric-effective .tag { display:inline-block; font-weight:700; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; padding:2px 7px; border-radius:20px; background:#eef2ff; color:#254deb; }
+
+  .report-edit-wrap { padding:4px 0; }
+  .edit-group { margin:0 0 16px; }
+  .edit-group-label { font-weight:700; font-size:13px; color:var(--navy-dark,#0b1747); margin-bottom:5px; }
+  .edit-group-hint { font-size:11.5px; color:var(--gray-mid,#5b6172); margin-bottom:6px; }
+  .edit-ta { width:100%; font:inherit; font-size:13px; padding:9px 11px; border:1px solid var(--line,#e5e7eb); border-radius:7px; resize:vertical; color:var(--navy-dark,#0b1747); }
+  .edit-sec { border:1px solid var(--line,#e5e7eb); border-radius:9px; padding:14px 16px; margin-bottom:14px; }
+  .edit-sec-head { font-weight:700; color:var(--navy-dark,#0b1747); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .report-evidence { margin:6px 0 2px; }
+  .report-evidence summary { cursor:pointer; font-size:12px; font-weight:600; color:#254deb; }
+  .report-evidence blockquote { margin:6px 0 4px; padding:7px 11px; background:#f5f5f7; border-left:3px solid #c9d4ff; border-radius:0 6px 6px 0; font-size:12.5px; color:#374151; }
+  .report-evidence .who { font-weight:700; color:#6B7280; font-size:11.5px; display:block; }
+  .reviewed-badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:4px 10px; border-radius:20px; }
+  .reviewed-badge.yes { background:#E6F4EC; color:#1E7A46; }
+  .reviewed-badge.no { background:#FEF3C7; color:#92400E; }
+
   .btn-icon {
     background: none; border: none; cursor: pointer;
     padding: 5px 7px; color: var(--gray-mid);
@@ -1251,6 +1275,26 @@
         <!-- LEFT: selection + config -->
         <div class="sticky-side">
           <div class="panel-card" style="margin-bottom:18px">
+            <div class="panel-card-head" style="cursor:pointer" onclick="toggleRubricPanel()">
+              <span class="panel-card-title">Analysis method (house style)</span>
+              <span class="link-btn" id="rubric-chev">▸ Edit</span>
+            </div>
+            <div class="panel-card-body" id="rubric-body" style="display:none">
+              <div class="rubric-note">Describe how Cardwell reads a 4C survey: what counts as real divergence, which questions to weight, tone, what to be conservative about. This guidance is added to every analysis run so the engine reasons the way you do.</div>
+              <div class="rubric-scope">
+                <label><input type="radio" name="rubric-scope" value="global" checked onchange="onRubricScopeChange()"> Global default</label>
+                <label><input type="radio" name="rubric-scope" value="project" onchange="onRubricScopeChange()"> This project only</label>
+              </div>
+              <textarea id="rubric-text" class="lp-textarea" rows="9" placeholder="e.g. Do not call something divergence unless at least two leaders are in genuine conflict, not just using different words. Treat the stop-doing question (Q6) as the richest signal. Be conservative with standout perspectives: only surface a point that truly stands apart. Keep takeaways practical, never generic."></textarea>
+              <div class="rubric-actions">
+                <button class="btn-action btn-primary-sm" id="rubric-save" onclick="saveRubric()">Save method</button>
+                <span class="rubric-status" id="rubric-status"></span>
+              </div>
+              <div class="rubric-effective" id="rubric-effective"></div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="margin-bottom:18px">
             <div class="panel-card-head">
               <span class="panel-card-title">1 · Select Responses</span>
             </div>
@@ -1306,6 +1350,7 @@
               <button class="btn-run" id="btn-run" onclick="runAnalysis()" disabled>
                 ✦ Run Analysis
               </button>
+              <button class="btn-action btn-ghost-sm" id="btn-preview-prompt" style="width:100%;margin-top:8px" onclick="openPromptPreview()">⌥ Preview / edit the prompt</button>
               <div class="run-error" id="run-error"></div>
 
               <div class="cfg-divider">or, no key needed</div>
@@ -1592,6 +1637,27 @@
   </div>
 </div>
 
+<!-- ══ PROMPT PREVIEW / EDIT MODAL ══ -->
+<div class="modal-overlay" id="prompt-overlay" onclick="closePromptBg(event)">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-name">Analysis prompt</div>
+        <div class="modal-date">This is exactly what gets sent to the model. Edit it for a one-off run, or change the house style to make it stick.</div>
+      </div>
+      <button class="modal-close" onclick="closePromptModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:66vh">
+      <textarea id="prompt-text" class="lp-textarea" style="min-height:48vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" style="color:var(--gray-mid);border-color:var(--gray-light)" onclick="closePromptModal()">Cancel</button>
+      <button class="btn-action btn-ghost-sm" onclick="resetPromptPreview()">↺ Reset to generated</button>
+      <button class="btn-close-modal" onclick="runEditedPrompt()">✦ Run with this prompt</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ DETAIL MODAL ══ -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalBg(event)">
   <div class="modal">
@@ -1711,7 +1777,7 @@ function switchView(view) {
     var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
     var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
   });
-  if (view === 'analysis') { renderSelectList(); loadSavedAnalyses(); }
+  if (view === 'analysis') { renderSelectList(); loadSavedAnalyses(); loadRubric(); }
   if (view === 'projects') loadProjects();
   if (view === 'deliverables') enterDeliverables();
   if (view === 'leaderportal') enterLeaderPortal();
@@ -2111,6 +2177,7 @@ function populateProjFilter() {
 function onProjFilterChange() {
   currentProjFilter = document.getElementById('proj-filter').value;
   renderSelectList();
+  loadRubric();
 }
 
 function visibleResponses() {
@@ -2244,19 +2311,49 @@ function exportPackage() {
   }
 }
 
+// ── House-style rubric state ────────────────────────────────────────────────
+var currentRubric = { global:'', project:'', effective:'', source:'none' };
+
+function effectiveRubricText() { return (currentRubric && currentRubric.effective || '').trim(); }
+
+function analysisProjectName() {
+  if (currentProjFilter && currentProjFilter !== '__all') {
+    var p = (allProjects || []).find(function(x){ return x.slug === currentProjFilter; });
+    if (p) return (p.projectName || p.slug) + (p.clientName ? ' (' + p.clientName + ')' : '');
+    // fall back to the label carried on the responses
+    var r = allResponses.find(function(x){ return projKeyOf(x) === currentProjFilter; });
+    if (r) return r.projectName || r.clientName || r.projectSlug;
+  }
+  return 'the leadership team';
+}
+
 // ── Build the verbatim prompt ───────────────────────────────────────────────
 function buildAnalysisPrompt(selected) {
   var lines = [];
   lines.push('You are an expert organizational-strategy facilitator analyzing leadership survey');
-  lines.push('responses for the Regions L&D team, using the Cardwell Way "4Cs" model.');
+  lines.push('responses for ' + analysisProjectName() + ', using the Cardwell Way "4Cs" model.');
   lines.push('');
   lines.push('CRITICAL RULES:');
   lines.push('- Analyze the responses EXACTLY AS WRITTEN. Do NOT paraphrase, correct, rewrite,');
   lines.push('  soften, or invent any wording. When you quote a respondent, quote them verbatim.');
   lines.push('- Do NOT attribute a view to someone who did not express it.');
   lines.push('- Base every finding strictly on the text provided below. Do not speculate beyond it.');
+  lines.push('- For every finding, include the supporting evidence: the respondent name(s) and the');
+  lines.push('  verbatim quote(s) the finding rests on. If you cannot cite evidence, do not make the finding.');
+
+  var rub = effectiveRubricText();
+  if (rub) {
+    lines.push('');
+    lines.push('=================== CARDWELL HOUSE STYLE (FOLLOW THIS) ===================');
+    lines.push('This is how Cardwell reads a 4C survey. Apply this judgment and these standards');
+    lines.push('throughout. Where it conflicts with generic analysis instincts, the house style wins.');
+    lines.push('');
+    lines.push(rub);
+    lines.push('=========================================================================');
+  }
+
   lines.push('');
-  lines.push('For EACH of the four sections (C1–C4) identify:');
+  lines.push('For EACH of the four sections (C1 to C4) identify:');
   lines.push('  (a) ALIGNMENT / CONVERGENCE: where respondents clearly share a view or framing.');
   lines.push('  (b) DIVERGENCE: where respondents disagree, define things differently, or pull in');
   lines.push('      different directions. Name who diverges and how.');
@@ -2266,7 +2363,7 @@ function buildAnalysisPrompt(selected) {
   lines.push('');
   lines.push('CRITICAL: go beyond reporting. Reporting the findings is not enough; the client must DO or CHANGE something.');
   lines.push('Produce a "Now What" that is action- and outcome-leading: the outcome to drive, the MINDSET shifts and');
-  lines.push('the BEHAVIOR shifts the team must make (as From → To pairs), and culture-gap guidance (per dimension,');
+  lines.push('the BEHAVIOR shifts the team must make (as From / To pairs), and culture-gap guidance (per dimension,');
   lines.push('what the team should think about for execution: prompts to work through, NOT proclamations or verdicts');
   lines.push('about their culture) to discuss live with the client.');
   lines.push('');
@@ -2299,9 +2396,9 @@ function buildAnalysisPrompt(selected) {
   lines.push('  "sections": [');
   lines.push('    {');
   lines.push('      "code": "C1",');
-  lines.push('      "alignment": ["concise finding", ...],');
-  lines.push('      "divergence": ["concise finding naming who and how", ...],');
-  lines.push('      "standout": [{"who": "Name", "point": "their standout perspective, with a verbatim quote where useful"}, ...],');
+  lines.push('      "alignment": [{"point": "concise finding", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
+  lines.push('      "divergence": [{"point": "concise finding naming who and how", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
+  lines.push('      "standout": [{"who": "Name", "point": "their standout perspective", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
   lines.push('      "takeaway": "one facilitator takeaway for this section"');
   lines.push('    }, ... (one object for each of C1, C2, C3, C4)');
   lines.push('  ],');
@@ -2317,7 +2414,7 @@ function buildAnalysisPrompt(selected) {
   lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution (a prompt to work through, not a verdict about their culture)"}, ...]');
   lines.push('  }');
   lines.push('}');
-  lines.push('Every array may be empty if nothing qualifies, but include all keys. Keep quotes verbatim.');
+  lines.push('Each finding in alignment, divergence and standout must be an object with a "point" and an "evidence" array of {who, quote} pairs, quotes verbatim. Every array may be empty if nothing qualifies, but include all keys.');
   return lines.join('\n');
 }
 
@@ -2348,7 +2445,8 @@ function runAnalysis() {
     '<div class="state-sub">Reading ' + selected.length + ' verbatim submission' + (selected.length !== 1 ? 's' : '') + ' across all 12 questions. Click Stop analysis to cancel and make changes.</div>' +
     '</div></div>';
 
-  var prompt = buildAnalysisPrompt(selected);
+  var prompt = (promptOverride != null) ? promptOverride : buildAnalysisPrompt(selected);
+  promptOverride = null; // one-shot
 
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -2384,7 +2482,8 @@ function runAnalysis() {
       meta: {
         model: model,
         when: new Date(),
-        respondents: selected.map(function(r){ return r.fullName || ((r.first||'') + ' ' + (r.last||'')); })
+        respondents: selected.map(function(r){ return r.fullName || ((r.first||'') + ' ' + (r.last||'')); }),
+        reviewed: false, reviewedBy: '', reviewedAt: ''
       }
     };
     // Capture context for the Deliverables tab
@@ -2455,6 +2554,271 @@ function expandAllC(expand) {
   Array.prototype.forEach.call(els, function(el){ el.classList.toggle('collapsed', !expand); });
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ANALYSIS CONTROLS: house-style rubric, prompt preview/edit, editable findings,
+// per-section redo, advisor-reviewed flag
+// ══════════════════════════════════════════════════════════════════════════════
+var promptOverride = null;       // one-shot edited prompt for the next run
+
+// ── House-style rubric ──────────────────────────────────────────────────────
+function rubricScope() {
+  var el = document.querySelector('input[name="rubric-scope"]:checked');
+  return el ? el.value : 'global';
+}
+function rubricProjectSlug() {
+  return (currentProjFilter && currentProjFilter !== '__all') ? currentProjFilter : '';
+}
+function toggleRubricPanel() {
+  var body = document.getElementById('rubric-body');
+  var chev = document.getElementById('rubric-chev');
+  var open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chev.textContent = open ? '▾ Hide' : '▸ Edit';
+}
+function loadRubric() {
+  // disable the "this project" option when no project is selected
+  var projOpt = document.querySelector('input[name="rubric-scope"][value="project"]');
+  if (projOpt) projOpt.disabled = !rubricProjectSlug();
+  var slug = rubricProjectSlug();
+  fetch(ENDPOINT_URL + '?action=getRubric&slug=' + encodeURIComponent(slug) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.success) return;
+      currentRubric = { global: j.global || '', project: j.project || '', effective: j.effective || '', source: j.source || 'none' };
+      // default the editor scope to whichever is in effect / makes sense
+      var useProject = !!(slug && (j.project || '').trim());
+      var scopeEl = document.querySelector('input[name="rubric-scope"][value="' + (useProject ? 'project' : 'global') + '"]');
+      if (scopeEl && !scopeEl.disabled) scopeEl.checked = true;
+      renderRubricEditor();
+    })
+    .catch(function(){});
+}
+function onRubricScopeChange() { renderRubricEditor(); }
+function renderRubricEditor() {
+  var scope = rubricScope();
+  document.getElementById('rubric-text').value = scope === 'project' ? (currentRubric.project || '') : (currentRubric.global || '');
+  var eff = document.getElementById('rubric-effective');
+  var srcLabel = currentRubric.source === 'project' ? 'this project\'s rubric' : (currentRubric.source === 'global' ? 'the global rubric' : 'no rubric yet');
+  eff.innerHTML = '<span class="tag">In effect</span> Analyses for ' + esc(analysisProjectName()) + ' currently use ' + srcLabel + '.';
+}
+function saveRubric() {
+  var scope = rubricScope();
+  var text = document.getElementById('rubric-text').value || '';
+  if (scope === 'project' && !rubricProjectSlug()) { document.getElementById('rubric-status').textContent = 'Pick a project in "Select Responses" first.'; return; }
+  var btn = document.getElementById('rubric-save'); btn.disabled = true;
+  document.getElementById('rubric-status').textContent = 'Saving…';
+  var payload = { type: 'saveRubric', token: projToken(), scope: scope, slug: rubricProjectSlug(), text: text };
+  fetch(ENDPOINT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      btn.disabled = false;
+      if (!j.success) { document.getElementById('rubric-status').textContent = 'Save failed: ' + (j.error || ''); return; }
+      if (scope === 'project') currentRubric.project = text; else currentRubric.global = text;
+      // recompute effective
+      currentRubric.effective = (currentRubric.project && currentRubric.project.trim()) ? currentRubric.project : currentRubric.global;
+      currentRubric.source = (currentRubric.project && currentRubric.project.trim()) ? 'project' : (currentRubric.global && currentRubric.global.trim() ? 'global' : 'none');
+      document.getElementById('rubric-status').textContent = '✓ Saved. Applied to every future analysis run.';
+      renderRubricEditor();
+    })
+    .catch(function(e){ btn.disabled = false; document.getElementById('rubric-status').textContent = 'Save failed: ' + e.message; });
+}
+
+// ── Prompt preview / edit ───────────────────────────────────────────────────
+function openPromptPreview() {
+  var selected = allResponses.filter(function(r){ return selectedIds[r.rowId]; });
+  if (!selected.length) { showRunError('Select at least one response first, so the prompt includes the right data.'); return; }
+  document.getElementById('prompt-text').value = buildAnalysisPrompt(selected);
+  document.getElementById('prompt-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePromptModal() { document.getElementById('prompt-overlay').classList.remove('open'); document.body.style.overflow = ''; }
+function closePromptBg(e) { if (e.target === document.getElementById('prompt-overlay')) closePromptModal(); }
+function resetPromptPreview() {
+  var selected = allResponses.filter(function(r){ return selectedIds[r.rowId]; });
+  document.getElementById('prompt-text').value = buildAnalysisPrompt(selected);
+}
+function runEditedPrompt() {
+  var key = (document.getElementById('api-key').value || '').trim();
+  if (!key) { showRunError('Enter your Anthropic API key first.'); closePromptModal(); return; }
+  promptOverride = document.getElementById('prompt-text').value || '';
+  closePromptModal();
+  runAnalysis();
+}
+
+// ── Advisor-reviewed flag ───────────────────────────────────────────────────
+function setReviewed(v) {
+  if (!lastReport) return;
+  lastReport.meta.reviewed = !!v;
+  lastReport.meta.reviewedBy = v ? advisorName() : '';
+  lastReport.meta.reviewedAt = v ? new Date().toISOString() : '';
+  persistWorkspace();
+  renderReport(lastReport);
+}
+
+// ── Per-section redo with a correction note ─────────────────────────────────
+function redoSection(code) {
+  if (!lastReport) return;
+  var key = (document.getElementById('api-key').value || '').trim();
+  if (!key) { showRunError('Enter your Anthropic API key first.'); return; }
+  var sdef = SECTIONS.find(function(s){ return s.code === code; }); if (!sdef) return;
+  var note = prompt('What should change about ' + code + ' (' + sdef.title + ')?\n\ne.g. "You over-called divergence. Only flag it where leaders are in genuine conflict, not just using different words."', '');
+  if (note === null) return;
+  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
+    : allResponses.filter(function(r){ return selectedIds[r.rowId]; });
+  if (!list.length) { alert('No responses are in context. Re-open or re-run the analysis, then redo a section.'); return; }
+
+  var lines = [];
+  lines.push('Re-do ONLY section ' + code + ' (' + sdef.title + ') of a Cardwell Way 4C leadership analysis.');
+  var rub = effectiveRubricText();
+  if (rub) { lines.push(''); lines.push('CARDWELL HOUSE STYLE (follow this):'); lines.push(rub); }
+  lines.push(''); lines.push('ADVISOR CORRECTION (apply this exactly): ' + note);
+  lines.push(''); lines.push('Rules: analyze verbatim, do not invent, and cite evidence (respondent name + verbatim quote) for every finding.');
+  lines.push('Facilitation lens: ' + sdef.facilitator);
+  lines.push(''); lines.push('VERBATIM RESPONSES for ' + code + ':');
+  list.forEach(function(r, i){
+    var name = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || ('Respondent ' + (i+1));
+    lines.push(''); lines.push('### ' + name);
+    sdef.questions.forEach(function(q){ lines.push('[' + code + ' ' + q.num + '] ' + q.text); lines.push('ANSWER: ' + ((r[q.id]||'').trim() || '(no answer)')); });
+  });
+  lines.push(''); lines.push('Return ONLY JSON (no fences): {"code":"' + code + '","alignment":[{"point":"...","evidence":[{"who":"...","quote":"..."}]}],"divergence":[{"point":"...","evidence":[{"who":"...","quote":"..."}]}],"standout":[{"who":"...","point":"...","evidence":[{"who":"...","quote":"..."}]}],"takeaway":"..."}');
+
+  alert('Redoing ' + code + '. This calls the model for just this section; the rest of the analysis is untouched.');
+  anthropicComplete(lines.join('\n'), 3000).then(function(text){
+    var sec = parseJsonLoose(text);
+    if (!sec) throw new Error('Could not parse the section response. Try again.');
+    sec.code = code;
+    var arr = lastReport.data.sections || (lastReport.data.sections = []);
+    var idx = -1; for (var i = 0; i < arr.length; i++) { if (arr[i].code === code) { idx = i; break; } }
+    if (idx >= 0) arr[idx] = sec; else arr.push(sec);
+    lastReport.meta.reviewed = false; lastReport.meta.reviewedBy = ''; // a regenerated section needs re-review
+    persistWorkspace();
+    renderReport(lastReport);
+  }).catch(function(e){ if (e && e.name === 'AbortError') return; alert('Redo failed: ' + e.message); });
+}
+
+// ── Editable findings ───────────────────────────────────────────────────────
+function edVal(id){ var el = document.getElementById(id); return el ? (el.value || '') : ''; }
+function parseLines(t){ return String(t||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean); }
+function mergeEvidence(points, oldArr){
+  oldArr = oldArr || [];
+  return points.map(function(pt){
+    var match = null; for (var i = 0; i < oldArr.length; i++) { if (fPoint(oldArr[i]) === pt) { match = oldArr[i]; break; } }
+    return { point: pt, evidence: match ? fEvidence(match) : [] };
+  });
+}
+function parseStandout(t, oldArr){
+  return parseLines(t).map(function(ln){
+    var who = '', pt = ln, bar = ln.indexOf('|');
+    if (bar >= 0) { who = ln.slice(0, bar).trim(); pt = ln.slice(bar + 1).trim(); }
+    var match = null; (oldArr || []).forEach(function(o){ if (fPoint(o) === pt) match = o; });
+    return { who: who, point: pt, evidence: match ? fEvidence(match) : [] };
+  });
+}
+function parseShifts(t){ return parseLines(t).map(function(ln){ var m = ln.split(/=>|→/); return { from: (m[0]||'').trim(), to: (m[1]||'').trim() }; }); }
+function parseCulture(t){ return parseLines(t).map(function(ln){ var m = ln.split('::'); return { dimension: (m[0]||'').trim(), consider: (m[1]||'').trim() }; }); }
+
+function editReport() {
+  if (!lastReport) return;
+  var d = lastReport.data;
+  var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
+  var pts = function(arr){ return (arr || []).map(fPoint).join('\n'); };
+
+  var html = '<div class="panel-card" id="report-card"><div class="report-edit-wrap">';
+  html += '<div class="report-toolbar">' +
+    '<button class="btn-action btn-primary-sm" onclick="saveReportEdits()">✓ Done editing</button>' +
+    '<button class="btn-action btn-ghost-sm" onclick="renderReport(lastReport)">Cancel</button>' +
+    '<span class="rubric-status">Edit the findings to match your judgment. One finding per line. Evidence stays attached to findings whose text you do not change; edited or new lines lose their evidence until you redo the section.</span>' +
+    '</div>';
+
+  html += '<div class="edit-group"><div class="edit-group-label">Executive summary</div>' +
+    '<textarea class="edit-ta" id="ed-exec" rows="3">' + esc(d.executiveSummary || '') + '</textarea></div>';
+
+  SECTIONS.forEach(function(s){
+    var sec = secByCode[s.code] || {};
+    html += '<div class="edit-sec"><div class="edit-sec-head">' + esc(s.code) + ' · ' + esc(s.title) + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Alignment / Convergence</div><div class="edit-group-hint">One finding per line.</div>' +
+      '<textarea class="edit-ta" id="ed-' + s.code + '-align" rows="3">' + esc(pts(sec.alignment)) + '</textarea></div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Divergence</div><div class="edit-group-hint">One finding per line.</div>' +
+      '<textarea class="edit-ta" id="ed-' + s.code + '-diverge" rows="3">' + esc(pts(sec.divergence)) + '</textarea></div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Standout perspectives</div><div class="edit-group-hint">One per line, format: Name | their point.</div>' +
+      '<textarea class="edit-ta" id="ed-' + s.code + '-standout" rows="3">' + esc((sec.standout || []).map(function(x){ var w = fWho(x); return (w ? w + ' | ' : '') + fPoint(x); }).join('\n')) + '</textarea></div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Facilitator takeaway</div>' +
+      '<textarea class="edit-ta" id="ed-' + s.code + '-take" rows="2">' + esc(sec.takeaway || '') + '</textarea></div>';
+    html += '</div>';
+  });
+
+  var o = d.overall || {};
+  html += '<div class="edit-sec"><div class="edit-sec-head">Overall Roll-Up</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Strongest convergence</div><textarea class="edit-ta" id="ed-ov-conv" rows="3">' + esc(pts(o.strongestConvergence)) + '</textarea></div>' +
+    '<div class="edit-group"><div class="edit-group-label">Biggest divergence</div><textarea class="edit-ta" id="ed-ov-div" rows="3">' + esc(pts(o.biggestDivergence)) + '</textarea></div>' +
+    '<div class="edit-group"><div class="edit-group-label">Watch items</div><textarea class="edit-ta" id="ed-ov-watch" rows="3">' + esc(pts(o.watchItems)) + '</textarea></div>' +
+    '</div>';
+
+  var nw = d.nowWhat || {};
+  html += '<div class="edit-sec"><div class="edit-sec-head">Now What</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Outcome to drive</div><textarea class="edit-ta" id="ed-nw-outcome" rows="2">' + esc(nw.outcome || '') + '</textarea></div>' +
+    '<div class="edit-group"><div class="edit-group-label">Mindset shifts</div><div class="edit-group-hint">One per line, format: from => to.</div><textarea class="edit-ta" id="ed-nw-mind" rows="3">' + esc((nw.mindsetShifts || []).map(function(p){ return (p.from||'') + ' => ' + (p.to||''); }).join('\n')) + '</textarea></div>' +
+    '<div class="edit-group"><div class="edit-group-label">Behavior shifts</div><div class="edit-group-hint">One per line, format: from => to.</div><textarea class="edit-ta" id="ed-nw-beh" rows="3">' + esc((nw.behaviorShifts || []).map(function(p){ return (p.from||'') + ' => ' + (p.to||''); }).join('\n')) + '</textarea></div>' +
+    '<div class="edit-group"><div class="edit-group-label">Culture gap</div><div class="edit-group-hint">One per line, format: dimension :: what to think about.</div><textarea class="edit-ta" id="ed-nw-culture" rows="4">' + esc((nw.cultureGap || []).map(function(r){ return (r.dimension||'') + ' :: ' + (r.consider||''); }).join('\n')) + '</textarea></div>' +
+    '</div>';
+
+  html += '</div></div>';
+  document.getElementById('report-area').innerHTML = html;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function saveReportEdits() {
+  if (!lastReport) return;
+  var d = lastReport.data;
+  d.executiveSummary = edVal('ed-exec').trim();
+  var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
+  d.sections = SECTIONS.map(function(s){
+    var old = secByCode[s.code] || {};
+    return {
+      code: s.code,
+      alignment: mergeEvidence(parseLines(edVal('ed-' + s.code + '-align')), old.alignment),
+      divergence: mergeEvidence(parseLines(edVal('ed-' + s.code + '-diverge')), old.divergence),
+      standout: parseStandout(edVal('ed-' + s.code + '-standout'), old.standout),
+      takeaway: edVal('ed-' + s.code + '-take').trim()
+    };
+  });
+  d.overall = {
+    strongestConvergence: parseLines(edVal('ed-ov-conv')),
+    biggestDivergence: parseLines(edVal('ed-ov-div')),
+    watchItems: parseLines(edVal('ed-ov-watch'))
+  };
+  d.nowWhat = {
+    outcome: edVal('ed-nw-outcome').trim(),
+    mindsetShifts: parseShifts(edVal('ed-nw-mind')),
+    behaviorShifts: parseShifts(edVal('ed-nw-beh')),
+    cultureGap: parseCulture(edVal('ed-nw-culture'))
+  };
+  // edits are the advisor's own work: keep the reviewed flag if already set, else leave as draft
+  persistWorkspace();
+  renderReport(lastReport);
+}
+
+// ── Finding normalization (supports string or {point, who, evidence}) ──────────
+function fPoint(x){ return (x && typeof x === 'object') ? (x.point || x.text || '') : (x || ''); }
+function fWho(x){ return (x && typeof x === 'object') ? (x.who || '') : ''; }
+function fEvidence(x){ return (x && typeof x === 'object' && Array.isArray(x.evidence)) ? x.evidence : []; }
+
+function evidenceHtml(ev, alwaysShow){
+  if (!ev || !ev.length) return '';
+  var quotes = ev.map(function(q){
+    var who = esc(q.who || ''); var quote = esc(q.quote || q.point || q.text || '');
+    return '<blockquote>' + (who ? '<span class="who">' + who + '</span>' : '') + quote + '</blockquote>';
+  }).join('');
+  if (alwaysShow) return '<div class="report-evidence">' + quotes + '</div>';
+  return '<details class="report-evidence"><summary>Evidence (' + ev.length + ')</summary>' + quotes + '</details>';
+}
+
+function findingLi(x, alwaysShowEvidence){
+  var who = fWho(x), point = fPoint(x);
+  return '<li>' + (who ? '<span class="who" style="font-weight:700;color:#6B7280">' + esc(who) + ': </span>' : '') +
+    esc(point) + evidenceHtml(fEvidence(x), alwaysShowEvidence) + '</li>';
+}
+
 function buildReportHtml(report, forExport) {
   var d = report.data, m = report.meta;
   var secByCode = {};
@@ -2472,8 +2836,16 @@ function buildReportHtml(report, forExport) {
   html += '<div class="report-body">';
 
   if (!forExport) {
+    var rv = m.reviewed
+      ? '<span class="reviewed-badge yes">✓ Advisor reviewed' + (m.reviewedBy ? ' · ' + esc(m.reviewedBy) : '') + '</span>'
+      : '<span class="reviewed-badge no">AI draft, not yet reviewed</span>';
     html += '<div class="report-toolbar">' +
+      rv +
       '<button class="btn-action btn-primary-sm" onclick="saveAnalysis()">💾 Save analysis</button>' +
+      '<button class="btn-action btn-ghost-sm" onclick="editReport()">✎ Edit findings</button>' +
+      (m.reviewed
+        ? '<button class="btn-action btn-ghost-sm" onclick="setReviewed(false)">Unmark reviewed</button>'
+        : '<button class="btn-action btn-ghost-sm" onclick="setReviewed(true)">✓ Mark reviewed</button>') +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(true)">⊕ Expand all</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(false)">⊖ Collapse all</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (HTML)</button>' +
@@ -2503,16 +2875,12 @@ function buildReportHtml(report, forExport) {
     html += '<div class="report-c-body">';
     html += '<div class="report-section-sub">' + esc(s.sub) + '</div>';
     html += '<div class="report-facil">Facilitator lens: ' + esc(s.facilitator) + '</div>';
-    html += findingBlock('align', '✓ Alignment / Convergence', (sec.alignment || []).map(function(x){
-      return '<li>' + esc(x) + '</li>';
-    }));
-    html += findingBlock('diverge', '⚡ Divergence', (sec.divergence || []).map(function(x){
-      return '<li>' + esc(x) + '</li>';
-    }));
-    html += findingBlock('standout', '★ Standout Perspectives', (sec.standout || []).map(function(x){
-      if (typeof x === 'string') return '<li>' + esc(x) + '</li>';
-      return '<li><span class="who">' + esc(x.who || '') + ':</span> <span class="quote">' + esc(x.point || '') + '</span></li>';
-    }));
+    if (!forExport) {
+      html += '<div style="margin:0 0 10px"><button class="btn-action btn-ghost-sm" onclick="redoSection(\'' + s.code + '\')">↻ Redo this section</button></div>';
+    }
+    html += findingBlock('align', '✓ Alignment / Convergence', (sec.alignment || []).map(function(x){ return findingLi(x, forExport); }));
+    html += findingBlock('diverge', '⚡ Divergence', (sec.divergence || []).map(function(x){ return findingLi(x, forExport); }));
+    html += findingBlock('standout', '★ Standout Perspectives', (sec.standout || []).map(function(x){ return findingLi(x, forExport); }));
     if (sec.takeaway) {
       html += '<div class="report-takeaway"><strong>Facilitator takeaway:</strong> ' + esc(sec.takeaway) + '</div>';
     }
@@ -2526,9 +2894,9 @@ function buildReportHtml(report, forExport) {
     html += '<div class="report-block">' +
       '<div class="report-section-title"><span class="report-section-name">Overall Roll-Up</span></div>' +
       '<div class="overall-grid">' +
-        findingBlock('align', '✓ Strongest Convergence', (o.strongestConvergence || []).map(function(x){ return '<li>' + esc(x) + '</li>'; })) +
-        findingBlock('diverge', '⚡ Biggest Divergence', (o.biggestDivergence || []).map(function(x){ return '<li>' + esc(x) + '</li>'; })) +
-        findingBlock('standout', '◎ Watch Items', (o.watchItems || []).map(function(x){ return '<li>' + esc(x) + '</li>'; })) +
+        findingBlock('align', '✓ Strongest Convergence', (o.strongestConvergence || []).map(function(x){ return findingLi(x, forExport); })) +
+        findingBlock('diverge', '⚡ Biggest Divergence', (o.biggestDivergence || []).map(function(x){ return findingLi(x, forExport); })) +
+        findingBlock('standout', '◎ Watch Items', (o.watchItems || []).map(function(x){ return findingLi(x, forExport); })) +
       '</div></div>';
   }
 
@@ -2644,6 +3012,8 @@ function saveAnalysis() {
   var def = (projName ? projName + ' · ' : '') + lastReport.meta.respondents.length + ' respondents · ' + fmtDate(lastReport.meta.when);
   var title = prompt('Name this analysis:', def);
   if (title === null) return;
+  // Persist the advisor-review status inside the data so it survives save/reload.
+  lastReport.data._review = { reviewed: !!lastReport.meta.reviewed, by: lastReport.meta.reviewedBy || '', at: lastReport.meta.reviewedAt || '' };
   var payload = { type: 'analysis', token: projToken(), analysis: {
     title: title || def,
     projectSlug: (currentProjFilter && currentProjFilter !== '__all') ? currentProjFilter : '',
@@ -2688,7 +3058,9 @@ function openSavedAnalysis(id) {
     .then(function(j){
       if (!j.success || !j.analysis) throw new Error(j.error || 'Not found');
       var a = j.analysis;
-      lastReport = { data: a.data, meta: { model: a.model, when: a.createdAt, respondents: a.respondents || [] } };
+      var rev = (a.data && a.data._review) || {};
+      lastReport = { data: a.data, meta: { model: a.model, when: a.createdAt, respondents: a.respondents || [],
+        reviewed: !!rev.reviewed, reviewedBy: rev.by || '', reviewedAt: rev.at || '' } };
       lastAnalysisProject = a.projectSlug || lastAnalysisProject;
       generatedDocs = {}; // different analysis: clear prior deliverables
       persistWorkspace();
@@ -3830,7 +4202,11 @@ function lpStatus(msg, cls) {
 // Build the leader-facing analysis findings body (self-contained, branded shell adds the styling).
 function buildLeaderFindingsBody(report) {
   var d = report.data || {}, m = report.meta || {};
-  var li = function(x){ return '<li>' + esc(x) + '</li>'; };
+  // Leader-facing: render point + attribution + verbatim evidence quotes (always visible for print).
+  var lpEv = function(ev){ return (ev && ev.length) ? ev.map(function(q){
+    return '<blockquote>' + (q.who ? '<strong>' + esc(q.who) + ': </strong>' : '') + esc(q.quote || q.point || '') + '</blockquote>';
+  }).join('') : ''; };
+  var li = function(x){ var who = fWho(x); return '<li>' + (who ? '<strong>' + esc(who) + ': </strong>' : '') + esc(fPoint(x)) + lpEv(fEvidence(x)) + '</li>'; };
   var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
   var h = '';
   h += '<p class="meta">' + (m.respondents && m.respondents.length ? m.respondents.length + ' respondents · ' : '') +
@@ -3842,10 +4218,7 @@ function buildLeaderFindingsBody(report) {
     if (s.sub) h += '<p>' + esc(s.sub) + '</p>';
     if ((sec.alignment || []).length) h += '<div class="callout guidepost"><h3>Alignment / Convergence</h3><ul>' + sec.alignment.map(li).join('') + '</ul></div>';
     if ((sec.divergence || []).length) h += '<div class="callout landmine"><h3>Divergence</h3><ul>' + sec.divergence.map(li).join('') + '</ul></div>';
-    if ((sec.standout || []).length) h += '<h3>Standout Perspectives</h3><ul>' + sec.standout.map(function(x){
-      if (typeof x === 'string') return '<li>' + esc(x) + '</li>';
-      return '<li><strong>' + esc(x.who || '') + ':</strong> ' + esc(x.point || '') + '</li>';
-    }).join('') + '</ul>';
+    if ((sec.standout || []).length) h += '<h3>Standout Perspectives</h3><ul>' + sec.standout.map(li).join('') + '</ul>';
     if (sec.takeaway) h += '<p><strong>Facilitator takeaway:</strong> ' + esc(sec.takeaway) + '</p>';
   });
   if (d.overall) {
