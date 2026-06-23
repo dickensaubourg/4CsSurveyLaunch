@@ -438,6 +438,38 @@
   }
   .move-bar-status { font-size: 12.5px; color: var(--gray-mid, #5b6172); }
 
+  /* Leader portal manager */
+  .lp-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+  .lp-leader { font-weight:700; color:var(--navy-dark,#0b1747); font-size:16px; }
+  .lp-url-line { font-size:13px; color:var(--gray-mid,#5b6172); margin-top:4px; }
+  .lp-url-line a { color:var(--blue,#254deb); word-break:break-all; }
+  .lp-row-actions { display:flex; align-items:center; gap:10px; }
+  .lp-status-badge { font-size:11px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:4px 10px; border-radius:20px; background:#eee; color:#666; }
+  .lp-status-badge.live { background:#E6F4EC; color:#1E7A46; }
+  .lp-status-badge.off { background:#F7ECE7; color:#9A3324; }
+  .lp-toggle { display:flex; align-items:center; gap:9px; font-size:14px; color:var(--navy-dark,#0b1747); cursor:pointer; }
+  .lp-toggle input { width:16px; height:16px; accent-color:var(--blue,#254deb); }
+  .lp-section-title { font-weight:700; color:var(--navy-dark,#0b1747); font-size:15px; margin-bottom:4px; }
+  .lp-section-note { font-size:12.5px; color:var(--gray-mid,#5b6172); margin-bottom:12px; }
+  .lp-items { display:grid; gap:10px; }
+  .lp-item { display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border:1px solid var(--line,#e5e7eb); border-radius:8px; }
+  .lp-item input[type=checkbox] { width:16px; height:16px; margin-top:2px; accent-color:var(--blue,#254deb); }
+  .lp-item-main { flex:1; }
+  .lp-item-title { font-weight:600; color:var(--navy-dark,#0b1747); font-size:14px; }
+  .lp-item-avail { font-size:12px; margin-top:2px; }
+  .lp-item-avail.ok { color:#1E7A46; }
+  .lp-item-avail.no { color:#9A3324; }
+  .lp-textarea { width:100%; font:inherit; font-size:13.5px; padding:11px 13px; border:1px solid var(--line,#e5e7eb); border-radius:8px; resize:vertical; color:var(--navy-dark,#0b1747); }
+  .lp-links-head { font-weight:600; font-size:13px; color:var(--navy-dark,#0b1747); margin:14px 0 8px; }
+  .lp-link-row { display:flex; gap:8px; margin-bottom:8px; }
+  .lp-link-row input { font:inherit; font-size:13px; padding:8px 11px; border:1px solid var(--line,#e5e7eb); border-radius:7px; }
+  .lp-link-row .lp-link-label { width:200px; }
+  .lp-link-row .lp-link-url { flex:1; }
+  .lp-link-row .lp-link-del { border:none; background:none; color:#9A3324; cursor:pointer; font-size:16px; padding:0 6px; }
+  .lp-publish-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .lp-publish-status { font-size:12.5px; color:var(--gray-mid,#5b6172); }
+  .danger-text { color:#9A3324; }
+
   .btn-icon {
     background: none; border: none; cursor: pointer;
     padding: 5px 7px; color: var(--gray-mid);
@@ -1088,6 +1120,7 @@
       <button class="view-nav-btn active" id="nav-responses" onclick="switchView('responses')">Responses</button>
       <button class="view-nav-btn" id="nav-analysis" onclick="switchView('analysis')">Analysis</button>
       <button class="view-nav-btn" id="nav-deliverables" onclick="switchView('deliverables')">Deliverables</button>
+      <button class="view-nav-btn" id="nav-leaderportal" onclick="switchView('leaderportal')">Leader Portal</button>
     </div>
     <div class="topbar-badge" id="topbar-badge" style="display:none"></div>
   </div>
@@ -1474,6 +1507,70 @@
       </div>
     </div><!-- /view-deliverables -->
 
+    <!-- ─────────── LEADER PORTAL VIEW ─────────── -->
+    <div class="view" id="view-leaderportal">
+      <div class="toolbar">
+        <span class="toolbar-title">Leader Portal</span>
+        <div class="toolbar-right">
+          <button class="btn-action btn-ghost-sm" onclick="enterLeaderPortal()">↺ Refresh</button>
+        </div>
+      </div>
+
+      <div class="panel-card" style="padding:20px 22px;margin-bottom:16px">
+        <div class="field" style="max-width:520px">
+          <label for="lp-project">Project / leader</label>
+          <select id="lp-project" class="cfg-select" onchange="onLPProjectChange()"></select>
+        </div>
+        <div class="deliv-context" id="lp-context" style="margin-top:6px">Select a project to manage its leader portal.</div>
+      </div>
+
+      <div id="lp-editor" style="display:none">
+        <div class="panel-card" style="padding:20px 22px;margin-bottom:16px">
+          <div class="lp-row">
+            <div>
+              <div class="lp-leader" id="lp-leader-line">Leader</div>
+              <div class="lp-url-line">Portal link: <a id="lp-url" href="#" target="_blank" rel="noopener"></a></div>
+            </div>
+            <div class="lp-row-actions">
+              <span class="lp-status-badge" id="lp-status-badge">Not published</span>
+              <button class="btn-action btn-ghost-sm" onclick="copyLeaderUrl()">🔗 Copy link</button>
+            </div>
+          </div>
+          <label class="lp-toggle"><input type="checkbox" id="lp-enabled" checked> Portal is live (leader can view published items)</label>
+        </div>
+
+        <div class="panel-card" style="padding:20px 22px;margin-bottom:16px">
+          <div class="lp-section-title">What the leader sees</div>
+          <div class="lp-section-note">Nothing is visible to the leader until you publish. Pick the items to include, then Publish. Re-publish any time to push the latest versions.</div>
+          <div id="lp-items" class="lp-items"></div>
+        </div>
+
+        <div class="panel-card" style="padding:20px 22px;margin-bottom:16px">
+          <div class="lp-section-title">Welcome note</div>
+          <div class="lp-section-note">A short, personal note shown at the top of the portal. Plain text; blank lines start new paragraphs.</div>
+          <textarea id="lp-welcome" class="lp-textarea" rows="4" placeholder="e.g. Welcome. This space holds your survey findings and your navigation plan. We will use these to shape your leadership of this transformation."></textarea>
+        </div>
+
+        <div class="panel-card" style="padding:20px 22px;margin-bottom:16px">
+          <div class="lp-section-title">Coaching notes &amp; resources</div>
+          <div class="lp-section-note">Coaching guidance for the leader (plain text), plus links to tools and resources.</div>
+          <textarea id="lp-coaching" class="lp-textarea" rows="5" placeholder="Coaching focus, what to work on before the workshop, prompts to reflect on..."></textarea>
+          <div class="lp-links-head">Resource links</div>
+          <div id="lp-links"></div>
+          <button class="btn-action btn-ghost-sm" style="margin-top:8px" onclick="addLPLink()">+ Add link</button>
+        </div>
+
+        <div class="panel-card" style="padding:18px 22px;margin-bottom:16px">
+          <div class="lp-publish-row">
+            <button class="btn-action btn-primary-sm" id="lp-publish-btn" onclick="publishLeaderPortal()">Publish / update portal</button>
+            <button class="btn-action btn-ghost-sm" onclick="previewLeaderPortal()">Preview as leader</button>
+            <button class="btn-action btn-ghost-sm danger-text" onclick="unpublishLeaderPortal()">Take offline</button>
+            <span class="lp-publish-status" id="lp-publish-status"></span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-leaderportal -->
+
   </div>
 </div>
 
@@ -1610,13 +1707,14 @@ function logout() {
 // ── View switching ─────────────────────────────────────────────────────────────
 function switchView(view) {
   currentView = view;
-  ['responses','analysis','projects','deliverables'].forEach(function(v){
+  ['responses','analysis','projects','deliverables','leaderportal'].forEach(function(v){
     var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
     var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
   });
   if (view === 'analysis') { renderSelectList(); loadSavedAnalyses(); }
   if (view === 'projects') loadProjects();
   if (view === 'deliverables') enterDeliverables();
+  if (view === 'leaderportal') enterLeaderPortal();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3562,6 +3660,315 @@ function projectCell(r) {
 }
 function esc(s) {
   return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LEADER PORTAL MANAGER
+// ══════════════════════════════════════════════════════════════════════════════
+var LP_ITEMS = [
+  { key:'analysis',  title:'Survey Analysis Findings',  src:'analysis' },
+  { key:'leaderNav', title:'Leader Navigation Plan',     src:'deliverable', type:'leaderNav' },
+  { key:'summary',   title:'Summary of Findings',        src:'deliverable', type:'summary' },
+  { key:'runOfShow', title:'Workshop Run of Show',        src:'deliverable', type:'runOfShow' },
+  { key:'deck',      title:'Workshop Deck',               src:'deliverable', type:'deck' }
+];
+var lpAvail = {};         // key -> true/false (content exists to publish)
+var lpLatestAnalysisId = null;
+var lpItemsChecked = {};  // key -> bool (current selection)
+var lpLinks = [];         // [{label,url}]
+var lpLoadedSlug = null;
+
+function enterLeaderPortal() {
+  fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (j.success) allProjects = j.projects || []; })
+    .catch(function(){})
+    .then(function(){ buildLPProjectDropdown(); onLPProjectChange(); });
+}
+
+function buildLPProjectDropdown() {
+  var sel = document.getElementById('lp-project'); if (!sel) return;
+  var prev = sel.value;
+  var html = '<option value="">Select a project…</option>';
+  allProjects.forEach(function(p){
+    html += '<option value="' + esc(p.slug) + '">' + esc(p.projectName || p.slug) + (p.clientName ? ' · ' + esc(p.clientName) : '') + '</option>';
+  });
+  sel.innerHTML = html;
+  if (prev) sel.value = prev;
+  else if (lastAnalysisProject) sel.value = lastAnalysisProject;
+}
+
+function lpProject() {
+  var slug = document.getElementById('lp-project').value;
+  return allProjects.find(function(p){ return p.slug === slug; }) || null;
+}
+
+function onLPProjectChange() {
+  var p = lpProject();
+  var editor = document.getElementById('lp-editor');
+  var ctx = document.getElementById('lp-context');
+  if (!p) {
+    editor.style.display = 'none';
+    ctx.className = 'deliv-context';
+    ctx.innerHTML = 'Select a project to manage its leader portal.';
+    return;
+  }
+  ctx.className = 'deliv-context';
+  ctx.innerHTML = 'Managing the portal for ' + esc(p.projectName || p.slug) + (p.clientName ? ' · ' + esc(p.clientName) : '') + '.';
+  editor.style.display = 'block';
+
+  var leader = [p.seniorLeaderName, p.seniorLeaderTitle].filter(Boolean).map(esc).join(' · ') || 'No senior leader set on this project';
+  document.getElementById('lp-leader-line').textContent = leader;
+  var url = SURVEY_BASE_URL + '/leader/' + p.slug;
+  var a = document.getElementById('lp-url'); a.href = url; a.textContent = url;
+
+  lpItemsChecked = {}; lpLinks = []; lpAvail = {}; lpLatestAnalysisId = null;
+  document.getElementById('lp-items').innerHTML = '<div class="lp-section-note">Checking available content…</div>';
+  loadLPAvailability(p.slug).then(function(){
+    return loadLPConfig(p.slug);
+  });
+}
+
+function loadLPAvailability(slug) {
+  var pa = fetch(ENDPOINT_URL + '?action=listAnalyses&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var mine = (j.analyses || []).filter(function(a){ return a.projectSlug === slug; });
+      // listAnalyses returns newest first
+      lpAvail.analysis = mine.length > 0;
+      lpLatestAnalysisId = mine.length ? mine[0].id : null;
+    }).catch(function(){ lpAvail.analysis = false; });
+  var pd = fetch(ENDPOINT_URL + '?action=listDeliverables&slug=' + encodeURIComponent(slug) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var types = {}; (j.deliverables || []).forEach(function(d){ types[d.type] = true; });
+      ['leaderNav','summary','runOfShow','deck'].forEach(function(t){ lpAvail[t] = !!types[t]; });
+    }).catch(function(){ ['leaderNav','summary','runOfShow','deck'].forEach(function(t){ lpAvail[t] = false; }); });
+  return Promise.all([pa, pd]);
+}
+
+function renderLPItems() {
+  var host = document.getElementById('lp-items');
+  host.innerHTML = LP_ITEMS.map(function(it){
+    var has = !!lpAvail[it.key];
+    var checked = lpItemsChecked[it.key] && has ? ' checked' : '';
+    var dis = has ? '' : ' disabled';
+    var avail = has
+      ? '<div class="lp-item-avail ok">✓ Latest version available to publish</div>'
+      : '<div class="lp-item-avail no">Not generated yet. ' + (it.src === 'analysis'
+          ? 'Save an analysis for this project in the Analysis tab.'
+          : 'Generate and save this deliverable for this project in the Deliverables tab.') + '</div>';
+    return '<label class="lp-item">' +
+      '<input type="checkbox" data-lp="' + it.key + '"' + checked + dis + ' onchange="onLPItemToggle(this)">' +
+      '<span class="lp-item-main"><span class="lp-item-title">' + esc(it.title) + '</span>' + avail + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+function onLPItemToggle(el) { lpItemsChecked[el.getAttribute('data-lp')] = el.checked; }
+
+function loadLPConfig(slug) {
+  return fetch(ENDPOINT_URL + '?action=getLeaderPortalConfig&slug=' + encodeURIComponent(slug) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      lpLoadedSlug = slug;
+      if (j.success && j.exists) {
+        document.getElementById('lp-enabled').checked = j.enabled !== false;
+        document.getElementById('lp-welcome').value = j.welcomeNote || '';
+        document.getElementById('lp-coaching').value = j.coachingHtml || '';
+        lpLinks = Array.isArray(j.links) ? j.links.slice() : [];
+        var items = j.items || {};
+        LP_ITEMS.forEach(function(it){ lpItemsChecked[it.key] = !!items[it.key]; });
+        setLPBadge(j.enabled !== false ? 'live' : 'off', j.publishedAt);
+      } else {
+        // No config yet: sensible defaults. Pre-check available core items.
+        document.getElementById('lp-enabled').checked = true;
+        document.getElementById('lp-welcome').value = '';
+        document.getElementById('lp-coaching').value = '';
+        lpLinks = [];
+        LP_ITEMS.forEach(function(it){ lpItemsChecked[it.key] = (it.key === 'analysis' || it.key === 'leaderNav') && !!lpAvail[it.key]; });
+        setLPBadge('none');
+      }
+      renderLPItems();
+      renderLPLinks();
+    })
+    .catch(function(){ renderLPItems(); renderLPLinks(); });
+}
+
+function setLPBadge(state, when) {
+  var b = document.getElementById('lp-status-badge');
+  if (state === 'live') { b.className = 'lp-status-badge live'; b.textContent = 'Live' + (when ? ' · ' + fmtDate(when) : ''); }
+  else if (state === 'off') { b.className = 'lp-status-badge off'; b.textContent = 'Saved, offline'; }
+  else { b.className = 'lp-status-badge'; b.textContent = 'Not published'; }
+}
+
+function renderLPLinks() {
+  var host = document.getElementById('lp-links');
+  host.innerHTML = lpLinks.map(function(l, i){
+    return '<div class="lp-link-row">' +
+      '<input class="lp-link-label" placeholder="Label" value="' + esc(l.label || '') + '" oninput="updateLPLink(' + i + ',\'label\',this.value)">' +
+      '<input class="lp-link-url" placeholder="https://…" value="' + esc(l.url || '') + '" oninput="updateLPLink(' + i + ',\'url\',this.value)">' +
+      '<button class="lp-link-del" title="Remove" onclick="removeLPLink(' + i + ')">×</button>' +
+    '</div>';
+  }).join('');
+}
+function addLPLink() { lpLinks.push({ label:'', url:'' }); renderLPLinks(); }
+function updateLPLink(i, k, v) { if (lpLinks[i]) lpLinks[i][k] = v; }
+function removeLPLink(i) { lpLinks.splice(i, 1); renderLPLinks(); }
+
+function copyLeaderUrl() {
+  var p = lpProject(); if (!p) return;
+  var url = SURVEY_BASE_URL + '/leader/' + p.slug;
+  navigator.clipboard.writeText(url).then(function(){ lpStatus('Link copied: ' + url); }, function(){ lpStatus(url); });
+}
+
+function lpStatus(msg, cls) {
+  var el = document.getElementById('lp-publish-status');
+  el.textContent = msg || ''; el.style.color = cls === 'err' ? '#9A3324' : '';
+}
+
+// Build the leader-facing analysis findings body (self-contained, branded shell adds the styling).
+function buildLeaderFindingsBody(report) {
+  var d = report.data || {}, m = report.meta || {};
+  var li = function(x){ return '<li>' + esc(x) + '</li>'; };
+  var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
+  var h = '';
+  h += '<p class="meta">' + (m.respondents && m.respondents.length ? m.respondents.length + ' respondents · ' : '') +
+       'Generated ' + esc(fmtDateFull(m.when || new Date())) + (m.model ? ' · ' + esc(m.model) : '') + '</p>';
+  if (d.executiveSummary) h += '<h2>Executive Summary</h2><p class="lead">' + esc(d.executiveSummary) + '</p>';
+  SECTIONS.forEach(function(s){
+    var sec = secByCode[s.code] || {};
+    h += '<h2>' + esc(s.code) + ' · ' + esc(s.title) + '</h2>';
+    if (s.sub) h += '<p>' + esc(s.sub) + '</p>';
+    if ((sec.alignment || []).length) h += '<div class="callout guidepost"><h3>Alignment / Convergence</h3><ul>' + sec.alignment.map(li).join('') + '</ul></div>';
+    if ((sec.divergence || []).length) h += '<div class="callout landmine"><h3>Divergence</h3><ul>' + sec.divergence.map(li).join('') + '</ul></div>';
+    if ((sec.standout || []).length) h += '<h3>Standout Perspectives</h3><ul>' + sec.standout.map(function(x){
+      if (typeof x === 'string') return '<li>' + esc(x) + '</li>';
+      return '<li><strong>' + esc(x.who || '') + ':</strong> ' + esc(x.point || '') + '</li>';
+    }).join('') + '</ul>';
+    if (sec.takeaway) h += '<p><strong>Facilitator takeaway:</strong> ' + esc(sec.takeaway) + '</p>';
+  });
+  if (d.overall) {
+    var o = d.overall;
+    h += '<h2>Overall Roll-Up</h2>';
+    if ((o.strongestConvergence || []).length) h += '<div class="callout guidepost"><h3>Strongest Convergence</h3><ul>' + o.strongestConvergence.map(li).join('') + '</ul></div>';
+    if ((o.biggestDivergence || []).length) h += '<div class="callout landmine"><h3>Biggest Divergence</h3><ul>' + o.biggestDivergence.map(li).join('') + '</ul></div>';
+    if ((o.watchItems || []).length) h += '<h3>Watch Items</h3><ul>' + o.watchItems.map(li).join('') + '</ul>';
+  }
+  if (d.nowWhat) {
+    var nw = d.nowWhat;
+    h += '<h2>Now What</h2>';
+    if (nw.outcome) h += '<p class="lead"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</p>';
+    if (nw.mindsetShifts && nw.mindsetShifts.length) h += '<h3>The mindset shifts this requires</h3>' + lpShiftTable(nw.mindsetShifts);
+    if (nw.behaviorShifts && nw.behaviorShifts.length) h += '<h3>The behavior shifts this requires</h3>' + lpShiftTable(nw.behaviorShifts);
+    if (nw.cultureGap && nw.cultureGap.length) {
+      h += '<h3>The culture gap: what to think about for execution</h3>';
+      h += '<p>Prompts to work through together, not verdicts. Decide where the team lands and a first step for each.</p>';
+      h += '<table><thead><tr><th>Dimension</th><th>What to think about for execution</th><th>Where we land / first step</th></tr></thead><tbody>' +
+        nw.cultureGap.map(function(r){ return '<tr><td>' + esc(r.dimension || '') + '</td><td>' + esc(r.consider || '') + '</td><td></td></tr>'; }).join('') +
+        '</tbody></table>';
+    }
+  }
+  return h;
+}
+function lpShiftTable(pairs) {
+  return '<table><thead><tr><th>From</th><th>To</th></tr></thead><tbody>' +
+    pairs.map(function(p){ return '<tr><td>' + esc(p.from || '') + '</td><td>' + esc(p.to || '') + '</td></tr>'; }).join('') +
+    '</tbody></table>';
+}
+
+function deckOutlineHtml(project, slides) {
+  var body = (slides || []).map(function(s){
+    var b = (s.bullets || []).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('');
+    return '<h3>Slide ' + esc(s.n != null ? s.n : '') + '. ' + esc(s.title || '') + '</h3>' +
+      (b ? '<ul>' + b + '</ul>' : '') + (s.note ? '<p class="meta">Facilitator note: ' + esc(s.note) + '</p>' : '');
+  }).join('');
+  return brandedDocHtml(project, { title:'Workshop Deck', audience:'Client-facing', brand:'client',
+    bodyHtml: '<p class="lead">An outline of the workshop deck slides. The full branded .pptx is available from your Cardwell team.</p>' + body });
+}
+
+// Assemble the vetted snapshot (each block as a self-contained branded doc) and publish.
+function publishLeaderPortal() {
+  var p = lpProject();
+  if (!p) { lpStatus('Select a project first.', 'err'); return; }
+  var btn = document.getElementById('lp-publish-btn');
+  btn.disabled = true; var was = btn.textContent; btn.textContent = 'Publishing…';
+  lpStatus('Assembling the latest content…');
+
+  var jobs = [];
+  var blocks = { reportHtml:'', navHtml:'', summaryHtml:'', runOfShowHtml:'', deckHtml:'' };
+  var items = {};
+  LP_ITEMS.forEach(function(it){ items[it.key] = !!(lpItemsChecked[it.key] && lpAvail[it.key]); });
+
+  if (items.analysis && lpLatestAnalysisId) {
+    jobs.push(fetch(ENDPOINT_URL + '?action=getAnalysis&id=' + encodeURIComponent(lpLatestAnalysisId) + '&token=' + encodeURIComponent(projToken()))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j.success && j.analysis) {
+          var a = j.analysis;
+          var report = { data: a.data, meta: { respondents: a.respondents || [], when: a.createdAt, model: a.model } };
+          blocks.reportHtml = brandedDocHtml(p, { title:'Survey Analysis Findings', audience:'Client-facing', brand:'client', bodyHtml: buildLeaderFindingsBody(report) });
+        }
+      }).catch(function(){}));
+  }
+
+  var delivMap = { leaderNav:'navHtml', summary:'summaryHtml', runOfShow:'runOfShowHtml', deck:'deckHtml' };
+  Object.keys(delivMap).forEach(function(type){
+    if (!items[type]) return;
+    jobs.push(fetch(ENDPOINT_URL + '?action=getDeliverable&slug=' + encodeURIComponent(p.slug) + '&type=' + encodeURIComponent(type) + '&token=' + encodeURIComponent(projToken()))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.success || !j.deliverable) return;
+        var doc = {}; try { doc = JSON.parse(j.deliverable.payload || '{}'); } catch (e) {}
+        if (type === 'deck') { blocks.deckHtml = doc.slides ? deckOutlineHtml(p, doc.slides) : ''; }
+        else { blocks[delivMap[type]] = doc.html || ''; }
+      }).catch(function(){}));
+  });
+
+  Promise.all(jobs).then(function(){
+    var cleanLinks = lpLinks.filter(function(l){ return l && (l.url || '').trim(); })
+      .map(function(l){ return { label: (l.label || '').trim(), url: (l.url || '').trim() }; });
+    var payload = { type: 'publishLeaderPortal', token: projToken(), portal: {
+      projectSlug: p.slug, token: p.leaderToken || '',
+      leaderName: p.seniorLeaderName || '', leaderTitle: p.seniorLeaderTitle || '',
+      clientName: p.clientName || '', projectName: p.projectName || '',
+      color1: p.color1 || '', color2: p.color2 || '', logo: p.logo || '',
+      enabled: document.getElementById('lp-enabled').checked,
+      welcomeNote: document.getElementById('lp-welcome').value || '',
+      coachingHtml: document.getElementById('lp-coaching').value || '',
+      links: cleanLinks, items: items,
+      reportHtml: blocks.reportHtml, navHtml: blocks.navHtml, summaryHtml: blocks.summaryHtml,
+      runOfShowHtml: blocks.runOfShowHtml, deckHtml: blocks.deckHtml,
+      publishedBy: advisorName()
+    }};
+    return fetch(ENDPOINT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        btn.disabled = false; btn.textContent = was;
+        if (!j.success) { lpStatus('Publish failed: ' + (j.error || ''), 'err'); return; }
+        setLPBadge(j.enabled ? 'live' : 'off', j.publishedAt);
+        var nInc = Object.keys(items).filter(function(k){ return items[k]; }).length;
+        lpStatus('✓ Published ' + nInc + ' item(s)' + (j.enabled ? ' · live at ' + SURVEY_BASE_URL + '/leader/' + p.slug : ' (currently offline)'));
+      });
+  }).catch(function(e){ btn.disabled = false; btn.textContent = was; lpStatus('Publish failed: ' + e.message, 'err'); });
+}
+
+function previewLeaderPortal() {
+  var p = lpProject(); if (!p) return;
+  window.open(SURVEY_BASE_URL + '/leader/' + p.slug, '_blank');
+}
+
+function unpublishLeaderPortal() {
+  var p = lpProject(); if (!p) return;
+  if (!confirm('Take the portal offline for ' + (p.projectName || p.slug) + '? The leader link will show a "being prepared" message until you publish again.')) return;
+  var payload = { type:'unpublishLeaderPortal', token: projToken(), portalToken: p.leaderToken || '', projectSlug: p.slug };
+  fetch(ENDPOINT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) { setLPBadge('none'); lpStatus('Portal taken offline. Nothing is visible to the leader.'); }
+      else lpStatus('Could not take offline: ' + (j.error || ''), 'err');
+    })
+    .catch(function(e){ lpStatus('Could not take offline: ' + e.message, 'err'); });
 }
 
 // Print styling: only the report card prints when in analysis view

@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/leader", "destination": "/leader.html" },
+    { "source": "/leader/(.*)", "destination": "/leader.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
