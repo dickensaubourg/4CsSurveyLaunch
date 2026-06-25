@@ -2338,8 +2338,8 @@ function buildAnalysisPrompt(selected) {
   lines.push('  soften, or invent any wording. When you quote a respondent, quote them verbatim.');
   lines.push('- Do NOT attribute a view to someone who did not express it.');
   lines.push('- Base every finding strictly on the text provided below. Do not speculate beyond it.');
-  lines.push('- For every finding, include the supporting evidence: the respondent name(s) and the');
-  lines.push('  verbatim quote(s) the finding rests on. If you cannot cite evidence, do not make the finding.');
+  lines.push('- For each finding, include brief supporting evidence: the respondent name(s) and one or');
+  lines.push('  two SHORT verbatim quotes (a phrase is fine) the finding rests on. Keep quotes concise.');
 
   var rub = effectiveRubricText();
   if (rub) {
@@ -2414,7 +2414,7 @@ function buildAnalysisPrompt(selected) {
   lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution (a prompt to work through, not a verdict about their culture)"}, ...]');
   lines.push('  }');
   lines.push('}');
-  lines.push('Each finding in alignment, divergence and standout must be an object with a "point" and an "evidence" array of {who, quote} pairs, quotes verbatim. Every array may be empty if nothing qualifies, but include all keys.');
+  lines.push('Each finding in alignment, divergence and standout is an object with a "point" and a short "evidence" array of {who, quote} pairs (one or two concise verbatim quotes). Every array may be empty if nothing qualifies, but include all keys. Keep the whole response compact so it is complete, valid JSON.');
   return lines.join('\n');
 }
 
@@ -2459,7 +2459,7 @@ function runAnalysis() {
     },
     body: JSON.stringify({
       model: model,
-      max_tokens: 8000,
+      max_tokens: 16000,
       messages: [{ role: 'user', content: prompt }]
     })
   })
@@ -2471,12 +2471,22 @@ function runAnalysis() {
       var m = (r.body && r.body.error && r.body.error.message) ? r.body.error.message : ('HTTP ' + r.status);
       throw new Error(m);
     }
+    // Read only the text content blocks (thinking blocks have no .text).
     var text = '';
     if (r.body && r.body.content && r.body.content.length) {
-      text = r.body.content.map(function(c){ return c.text || ''; }).join('');
+      text = r.body.content.filter(function(c){ return c.type === 'text' || (c.text && !c.type); })
+        .map(function(c){ return c.text || ''; }).join('');
+    }
+    // If the model ran out of output room, the JSON is cut off. Say so plainly.
+    if (r.body && r.body.stop_reason === 'max_tokens') {
+      throw new Error('The response was cut off before it finished (hit the output limit). Analyze fewer responses at once, or shorten the house-style rubric, then run again.');
     }
     var data = parseJsonLoose(text);
-    if (!data || !data.sections) throw new Error('The model did not return analysis in the expected format. Try again, or switch models.');
+    if (!data || !data.sections) {
+      try { console.log('[4C] Unparseable analysis response (first 800 chars):', (text || '').slice(0, 800)); } catch (e) {}
+      var hint = text ? (' The model returned text that was not valid JSON. First part: "' + text.slice(0, 140).replace(/\s+/g, ' ') + '…"') : ' The model returned an empty response.';
+      throw new Error('The model did not return analysis in the expected format.' + hint + ' Try again, switch models, or use Preview / edit the prompt to simplify it.');
+    }
     lastReport = {
       data: data,
       meta: {
