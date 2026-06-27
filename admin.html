@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
 <style>
   :root {
     --blue:       #254deb;
@@ -665,6 +666,16 @@
     white-space: pre-wrap;
   }
 
+  .cmt-wrap { margin-top: 9px; }
+  .cmt-label { display:block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--blue, #254deb); margin-bottom: 4px; }
+  .cmt-input {
+    width: 100%; font: inherit; font-size: 13px; padding: 9px 12px; min-height: 44px;
+    border: 1px dashed #c9d4ff; border-radius: 7px; background: #fbfcff; resize: vertical;
+    color: var(--navy-dark, #0b1747);
+  }
+  .cmt-input:focus { outline: none; border-color: var(--blue, #254deb); border-style: solid; background: #fff; }
+  .cmt-status { flex: 1; font-size: 12.5px; color: var(--gray-mid, #5b6172); }
+
   .modal-footer {
     padding: 16px 30px;
     border-top: 1px solid var(--gray-light);
@@ -1209,6 +1220,7 @@
           <button class="btn-action btn-ghost-sm" onclick="loadData()">↺ Refresh</button>
           <button class="btn-action btn-primary-sm" onclick="switchView('analysis')">✦ Analyze</button>
           <button class="btn-action btn-ghost-sm" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn-action btn-ghost-sm" id="btn-export-commented" onclick="exportAllCommented()">⬇ Export commented (.docx)</button>
         </div>
       </div>
 
@@ -1671,6 +1683,9 @@
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
       <button class="btn-delete" onclick="deleteCurrentRow()">Delete Response</button>
+      <span class="cmt-status" id="cmt-status"></span>
+      <button class="btn-action btn-ghost-sm" onclick="downloadCommentedDoc()">⬇ Download (.docx)</button>
+      <button class="btn-action btn-primary-sm" onclick="saveComments()">💾 Save comments</button>
       <button class="btn-close-modal" onclick="closeModal()">Close</button>
     </div>
   </div>
@@ -2067,13 +2082,129 @@ function openModal(rowId) {
         '<div class="modal-q-num">' + q.num + '</div>' +
         '<div class="modal-q-title">' + esc(q.text) + '</div>' +
         '<div class="modal-q-answer">' + esc(ans) + '</div>' +
+        '<div class="cmt-wrap"><label class="cmt-label">Advisor comment</label>' +
+        '<textarea class="cmt-input" id="cmt-' + q.id + '" placeholder="Your notes on this answer (private, never shown to the client or saved over their response)"></textarea></div>' +
         '</div>';
     });
   });
 
   document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('cmt-status').textContent = '';
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Load any saved advisor comments for this response and prefill (responses untouched).
+  fetch(ENDPOINT_URL + '?action=getComments&rowId=' + encodeURIComponent(rowId) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(res){ return res.json(); })
+    .then(function(j){
+      if (!j.success || !j.comments) return;
+      Object.keys(j.comments).forEach(function(qid){
+        var el = document.getElementById('cmt-' + qid);
+        if (el) el.value = j.comments[qid] || '';
+      });
+      if (j.exists && j.updatedAt) document.getElementById('cmt-status').textContent = 'Comments last saved ' + fmtDateFull(j.updatedAt) + (j.advisor ? ' by ' + j.advisor : '');
+    })
+    .catch(function(){});
+}
+
+// Collect the comment textareas in the open modal into {qid: text} (only non-empty).
+function collectComments() {
+  var out = {};
+  SECTIONS.forEach(function(s){ s.questions.forEach(function(q){
+    var el = document.getElementById('cmt-' + q.id);
+    if (el && el.value.trim()) out[q.id] = el.value.trim();
+  }); });
+  return out;
+}
+
+function saveComments() {
+  if (!currentRowId) return;
+  var r = allResponses.find(function(x){ return x.rowId === currentRowId; });
+  var status = document.getElementById('cmt-status');
+  status.textContent = 'Saving…';
+  var payload = { type: 'saveComments', token: projToken(), rowId: currentRowId,
+    projectSlug: (r && r.projectSlug) || '', comments: collectComments(), advisor: advisorName() };
+  fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(res){ return res.json(); })
+    .then(function(j){
+      if (j.success) status.textContent = '✓ Comments saved. Your client\'s responses are unchanged.';
+      else status.textContent = 'Save failed: ' + (j.error || '');
+    })
+    .catch(function(e){ status.textContent = 'Save failed: ' + e.message; });
+}
+
+// ── Commented Q&A as a Word .docx ───────────────────────────────────────────
+function commentedBodyForResponse(r, comments) {
+  var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || 'Respondent';
+  var meta = [r.projectName || r.clientName || (r.projectSlug && String(r.projectSlug).trim()) || '', r.timestamp ? 'Submitted ' + fmtDateFull(r.timestamp) : ''].filter(Boolean).join(' · ');
+  var h = '<h2 style="color:#00007b;margin:18px 0 2px">' + esc(name) + '</h2>';
+  if (meta) h += '<p style="color:#666;font-size:10.5pt;margin:0 0 8px">' + esc(meta) + '</p>';
+  SECTIONS.forEach(function(s){
+    h += '<h3 style="color:#254deb;margin:14px 0 4px">' + esc(s.code) + ' · ' + esc(s.title) + '</h3>';
+    s.questions.forEach(function(q){
+      var ans = (r[q.id] || '').trim() || '(no answer)';
+      var c = (comments && comments[q.id]) ? comments[q.id] : '';
+      h += '<p style="margin:8px 0 2px"><b>' + esc(q.num) + '. ' + esc(q.text) + '</b></p>';
+      h += '<p style="margin:0 0 4px">' + esc(ans).replace(/\n/g, '<br>') + '</p>';
+      if (c) h += '<p style="margin:0 0 8px;background:#eef2ff;border-left:3px solid #254deb;padding:6px 10px"><b>Advisor comment:</b> ' + esc(c).replace(/\n/g, '<br>') + '</p>';
+    });
+  });
+  return h;
+}
+function docWrap(title, bodyHtml) {
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title></head>' +
+    '<body style="font-family:Calibri,Arial,sans-serif;color:#1f2937;font-size:11pt">' +
+    '<h1 style="color:#00007b">' + esc(title) + '</h1>' +
+    '<p style="color:#b45309;font-size:10pt"><b>Confidential. Cardwell advisor working notes.</b> Client responses are reproduced verbatim and unedited; advisor comments are added separately.</p>' +
+    bodyHtml + '</body></html>';
+}
+function downloadDocxFromHtml(html, base) {
+  try {
+    if (window.htmlDocx && htmlDocx.asBlob) {
+      var blob = htmlDocx.asBlob(html);
+      var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = base + '.docx'; a.click(); URL.revokeObjectURL(url);
+      return;
+    }
+  } catch (e) {}
+  // Fallback if the .docx library did not load: a Word-readable .doc
+  var blob2 = new Blob(['﻿' + html], { type: 'application/msword' });
+  var url2 = URL.createObjectURL(blob2); var a2 = document.createElement('a'); a2.href = url2; a2.download = base + '.doc'; a2.click(); URL.revokeObjectURL(url2);
+}
+
+function downloadCommentedDoc() {
+  if (!currentRowId) return;
+  var r = allResponses.find(function(x){ return x.rowId === currentRowId; }); if (!r) return;
+  var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || 'leader';
+  // use what is on screen now (includes unsaved edits)
+  var html = docWrap('Commented Responses - ' + name, commentedBodyForResponse(r, collectComments()));
+  downloadDocxFromHtml(html, 'Cardwell_CommentedResponses_' + slugify(name) + '_' + stamp());
+}
+
+function exportAllCommented() {
+  if (!allResponses.length) { alert('No responses to export.'); return; }
+  var btn = document.getElementById('btn-export-commented'); if (btn) { btn.disabled = true; btn.textContent = 'Building…'; }
+  fetch(ENDPOINT_URL + '?action=listComments&token=' + encodeURIComponent(projToken()))
+    .then(function(res){ return res.json(); })
+    .then(function(j){
+      var map = (j.success && j.comments) ? j.comments : {};
+      var groups = {}, order = [];
+      allResponses.forEach(function(r){
+        var key = r.projectName || r.clientName || (r.projectSlug && String(r.projectSlug).trim()) || 'No project';
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(r);
+      });
+      var body = '';
+      order.forEach(function(key){
+        body += '<h2 style="color:#254deb;border-bottom:2px solid #ddd;margin-top:22px">' + esc(key) + '</h2>';
+        groups[key].sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); }).forEach(function(r){
+          var cm = map[String(r.rowId)] ? map[String(r.rowId)].comments : {};
+          body += commentedBodyForResponse(r, cm);
+        });
+      });
+      downloadDocxFromHtml(docWrap('Commented Responses - All', body), 'Cardwell_CommentedResponses_All_' + stamp());
+      if (btn) { btn.disabled = false; btn.textContent = '⬇ Export commented (.docx)'; }
+    })
+    .catch(function(e){ alert('Export failed: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = '⬇ Export commented (.docx)'; } });
 }
 
 function closeModalBg(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
