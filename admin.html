@@ -675,6 +675,7 @@
   }
   .cmt-input:focus { outline: none; border-color: var(--blue, #254deb); border-style: solid; background: #fff; }
   .cmt-status { flex: 1; font-size: 12.5px; color: var(--gray-mid, #5b6172); }
+  .cmt-flag { font-size: 12px; margin-left: 5px; vertical-align: middle; }
 
   .modal-footer {
     padding: 16px 30px;
@@ -1815,6 +1816,7 @@ function loadData() {
       renderTable();
       renderSelectList();
       ensureProjectsLoaded();
+      refreshCommentFlags();
       document.getElementById('stat-refreshed').textContent = fmtTime(new Date());
       var badge = document.getElementById('topbar-badge');
       badge.textContent = allResponses.length + ' response' + (allResponses.length !== 1 ? 's' : '');
@@ -1888,7 +1890,8 @@ function renderTable() {
       return '<tr' + rowCls + ' onclick="openModal(' + r.rowId + ')">' +
         '<td class="td-check"><input type="checkbox"' + checked +
           ' onclick="event.stopPropagation();toggleRespSel(' + r.rowId + ',this.checked,this)"></td>' +
-        '<td class="td-name">' + esc(r.fullName || (r.first + ' ' + r.last)) + '</td>' +
+        '<td class="td-name">' + esc(r.fullName || (r.first + ' ' + r.last)) +
+          (commentedRows[r.rowId] ? ' <span class="cmt-flag" title="Has advisor comments">💬</span>' : '') + '</td>' +
         '<td class="td-project">' + projectCell(r) + '</td>' +
         '<td class="td-date">' + fmtDate(r.timestamp) + '</td>' +
         '<td class="td-preview">' + esc(trunc(r.q1, 55)) + '</td>' +
@@ -2127,10 +2130,31 @@ function saveComments() {
   fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
     .then(function(res){ return res.json(); })
     .then(function(j){
-      if (j.success) status.textContent = '✓ Comments saved. Your client\'s responses are unchanged.';
-      else status.textContent = 'Save failed: ' + (j.error || '');
+      if (j.success) {
+        status.textContent = '✓ Comments saved. Your client\'s responses are unchanged.';
+        if (Object.keys(payload.comments).length) commentedRows[currentRowId] = true; else delete commentedRows[currentRowId];
+        renderTable();
+      } else status.textContent = 'Save failed: ' + (j.error || '');
     })
     .catch(function(e){ status.textContent = 'Save failed: ' + e.message; });
+}
+
+// ── Which responses have advisor comments (for the list icon) ───────────────
+var commentedRows = {}; // rowId -> true when at least one comment exists
+function refreshCommentFlags() {
+  fetch(ENDPOINT_URL + '?action=listComments&token=' + encodeURIComponent(projToken()))
+    .then(function(res){ return res.json(); })
+    .then(function(j){
+      commentedRows = {};
+      if (j.success && j.comments) {
+        Object.keys(j.comments).forEach(function(id){
+          var c = j.comments[id] && j.comments[id].comments;
+          if (c && Object.keys(c).length) commentedRows[id] = true;
+        });
+      }
+      renderTable();
+    })
+    .catch(function(){});
 }
 
 // ── Commented Q&A as a Word .docx ───────────────────────────────────────────
