@@ -1891,7 +1891,7 @@ function renderTable() {
         '<td class="td-check"><input type="checkbox"' + checked +
           ' onclick="event.stopPropagation();toggleRespSel(' + r.rowId + ',this.checked,this)"></td>' +
         '<td class="td-name">' + esc(r.fullName || (r.first + ' ' + r.last)) +
-          (commentedRows[r.rowId] ? ' <span class="cmt-flag" title="Has advisor comments">💬</span>' : '') + '</td>' +
+          (commentedRows[respKey(r)] ? ' <span class="cmt-flag" title="Has advisor comments">💬</span>' : '') + '</td>' +
         '<td class="td-project">' + projectCell(r) + '</td>' +
         '<td class="td-date">' + fmtDate(r.timestamp) + '</td>' +
         '<td class="td-preview">' + esc(trunc(r.q1, 55)) + '</td>' +
@@ -2097,7 +2097,7 @@ function openModal(rowId) {
   document.body.style.overflow = 'hidden';
 
   // Load any saved advisor comments for this response and prefill (responses untouched).
-  fetch(ENDPOINT_URL + '?action=getComments&rowId=' + encodeURIComponent(rowId) + '&token=' + encodeURIComponent(projToken()))
+  fetch(ENDPOINT_URL + '?action=getComments&respKey=' + encodeURIComponent(respKey(r)) + '&rowId=' + encodeURIComponent(rowId) + '&token=' + encodeURIComponent(projToken()))
     .then(function(res){ return res.json(); })
     .then(function(j){
       if (!j.success || !j.comments) return;
@@ -2109,6 +2109,9 @@ function openModal(rowId) {
     })
     .catch(function(){});
 }
+
+// Stable identity for a response submission (survives row add/delete/reorder).
+function respKey(r) { return String((r && r.timestamp) || '').trim() || ('row:' + (r ? r.rowId : '')); }
 
 // Collect the comment textareas in the open modal into {qid: text} (only non-empty).
 function collectComments() {
@@ -2125,14 +2128,15 @@ function saveComments() {
   var r = allResponses.find(function(x){ return x.rowId === currentRowId; });
   var status = document.getElementById('cmt-status');
   status.textContent = 'Saving…';
-  var payload = { type: 'saveComments', token: projToken(), rowId: currentRowId,
+  var key = respKey(r);
+  var payload = { type: 'saveComments', token: projToken(), respKey: key, rowId: currentRowId,
     projectSlug: (r && r.projectSlug) || '', comments: collectComments(), advisor: advisorName() };
   fetch(ENDPOINT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
     .then(function(res){ return res.json(); })
     .then(function(j){
       if (j.success) {
         status.textContent = '✓ Comments saved. Your client\'s responses are unchanged.';
-        if (Object.keys(payload.comments).length) commentedRows[currentRowId] = true; else delete commentedRows[currentRowId];
+        if (Object.keys(payload.comments).length) commentedRows[key] = true; else delete commentedRows[key];
         renderTable();
       } else status.textContent = 'Save failed: ' + (j.error || '');
     })
@@ -2140,18 +2144,19 @@ function saveComments() {
 }
 
 // ── Which responses have advisor comments (for the list icon) ───────────────
-var commentedRows = {}; // rowId -> true when at least one comment exists
+var commentedRows = {}; // respKey -> true when at least one non-empty comment exists
+function hasRealComments(c) { return !!(c && Object.keys(c).some(function(k){ return String(c[k] || '').trim() !== ''; })); }
 function refreshCommentFlags() {
   fetch(ENDPOINT_URL + '?action=listComments&token=' + encodeURIComponent(projToken()))
     .then(function(res){ return res.json(); })
     .then(function(j){
       commentedRows = {};
-      if (j.success && j.comments) {
-        Object.keys(j.comments).forEach(function(id){
-          var c = j.comments[id] && j.comments[id].comments;
-          if (c && Object.keys(c).length) commentedRows[id] = true;
-        });
-      }
+      var items = (j.success && j.items) ? j.items : [];
+      items.forEach(function(it){
+        if (!hasRealComments(it.comments)) return;
+        if (it.respKey) commentedRows[it.respKey] = true;        // stable match
+        else if (it.rowId) commentedRows['row:' + it.rowId] = true; // legacy: only matches if no timestamp
+      });
       renderTable();
     })
     .catch(function(){});
