@@ -1734,7 +1734,8 @@
     <div class="modal-footer">
       <button class="btn-delete" onclick="deleteCurrentRow()">Delete Response</button>
       <span class="cmt-status" id="cmt-status"></span>
-      <button class="btn-action btn-ghost-sm" onclick="downloadCommentedDoc()">⬇ Download (.docx)</button>
+      <button class="btn-action btn-ghost-sm" onclick="downloadIndivReportFromModal()" title="Generate and download this leader's Individual Report (.docx)">⬇ Individual Report (.docx)</button>
+      <button class="btn-action btn-ghost-sm" onclick="downloadCommentedDoc()">⬇ Commented Q&A (.docx)</button>
       <button class="btn-action btn-primary-sm" onclick="saveComments()">💾 Save comments</button>
       <button class="btn-close-modal" onclick="closeModal()">Close</button>
     </div>
@@ -2386,6 +2387,62 @@ function downloadCommentedDoc() {
   // use what is on screen now (includes unsaved edits)
   var html = docWrap('Commented Responses - ' + name, commentedBodyForResponse(r, collectComments()));
   downloadDocxFromHtml(html, 'Cardwell_CommentedResponses_' + slugify(name) + '_' + stamp());
+}
+
+// ── Individual Report download from the open response modal ───────────────────
+// Builds the same Individual Report as the Deliverables tab but uses advisor
+// comments already loaded in the modal textareas (no extra server round-trip).
+function downloadIndivReportFromModal() {
+  if (!currentRowId) return;
+  var r = allResponses.find(function(x){ return x.rowId === currentRowId; });
+  if (!r) return;
+  var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || 'Respondent';
+  // Collect comments from the open modal textareas
+  var comments = {};
+  SECTIONS.forEach(function(s){ s.questions.forEach(function(q){
+    var el = document.getElementById('cmt-' + q.id);
+    if (el && el.value.trim()) comments[q.id] = el.value.trim();
+  }); });
+  var qm = qMetaById();
+  var groups = (typeof ONEPAGE_COMPONENTS !== 'undefined' ? ONEPAGE_COMPONENTS.map(function(c){ return { key:c.key, label:c.label }; }) : [])
+    .concat(typeof CROSSCUTTING !== 'undefined' ? CROSSCUTTING.map(function(c){ return { key:c.key, label:c.label }; }) : []);
+  // Fall back to section-based grouping if OnePage components not defined yet
+  if (!groups.length) {
+    SECTIONS.forEach(function(s){
+      var inner = '';
+      s.questions.forEach(function(q){
+        var ans = (r[q.id] || '').trim() || '(no answer)';
+        inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
+        inner += '<blockquote>' + esc(ans) + '</blockquote>';
+        if (comments[q.id]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[q.id]) + '</p></div>';
+      });
+      groups.push({ _legacy: true, label: s.code + ' · ' + s.title, inner: inner });
+    });
+  }
+  var body = '<p class="lead">This is your own survey input, organized by the OnePage component each answer most directly informs. Your client team sees only anonymized themes; this report is yours.</p>';
+  if (groups[0] && groups[0]._legacy) {
+    groups.forEach(function(g){ if (g.inner) body += '<h2>' + esc(g.label) + '</h2>' + g.inner; });
+  } else {
+    groups.forEach(function(g){
+      var qids = typeof Q_PRIMARY_COMPONENT !== 'undefined'
+        ? Object.keys(Q_PRIMARY_COMPONENT).filter(function(qid){ return Q_PRIMARY_COMPONENT[qid] === g.key; })
+        : [];
+      if (!qids.length) return;
+      var inner = '';
+      qids.forEach(function(qid){
+        var q = qm[qid]; if (!q) return;
+        var ans = (r[qid] || '').trim() || '(no answer)';
+        inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
+        inner += '<blockquote>' + esc(ans) + '</blockquote>';
+        if (comments[qid]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[qid]) + '</p></div>';
+      });
+      if (inner) body += '<h2>' + esc(g.label) + '</h2>' + inner;
+    });
+  }
+  // Use current deliverables project if one is selected, otherwise Cardwell branding
+  var project = (typeof getDelivProject === 'function') ? getDelivProject() : null;
+  var doc = brandedDocHtml(project, { title:'Individual Report: ' + name, audience:'That leader', brand: project ? 'client' : 'cardwell', bodyHtml: body });
+  downloadDocxFromHtml(doc, 'Cardwell_IndividualReport_' + slugify(name) + '_' + stamp());
 }
 
 function exportAllCommented() {
@@ -3531,7 +3588,7 @@ function buildReportHtmlLegacy(report, forExport) {
         : '<button class="btn-action btn-ghost-sm" onclick="setReviewed(true)">✓ Mark reviewed</button>') +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(true)">⊕ Expand all</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(false)">⊖ Collapse all</button>' +
-      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (HTML)</button>' +
+      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (.docx)</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
       '</div>';
   }
@@ -3778,7 +3835,7 @@ function buildOnePageReportHtml(report, forExport){
         : '<button class="btn-action btn-ghost-sm" onclick="setReviewed(true)">✓ Mark reviewed</button>') +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(true)">⊕ Expand all</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(false)">⊖ Collapse all</button>' +
-      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (HTML)</button>' +
+      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (.docx)</button>' +
       '<button class="btn-action btn-ghost-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
       '</div>';
   }
@@ -3910,24 +3967,20 @@ function setComponentComment(key, val){
   if (comp) { comp.advisorComment = val; persistWorkspace(); }
 }
 
-// ── Download report as standalone HTML ─────────────────────────────────────────
+// ── Download report as Word (.docx) ────────────────────────────────────────────
 function downloadReport() {
   if (!lastReport) return;
   var inner = buildReportHtml(lastReport, true);
   var styles = document.querySelector('style').innerHTML;
   var doc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-    '<title>4C Analysis · Regions L&D</title>' +
+    '<title>4C Analysis</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
-    '<style>' + styles + ' body{padding:28px;max-width:1000px;margin:0 auto;background:#fff}</style>' +
+    '<style>' + styles + ' body{padding:28px;max-width:1000px;margin:0 auto;background:#fff}' +
+    '.page-break{page-break-before:always;break-before:page;display:block;height:0;margin:0;padding:0}' +
+    '@media print{.page-break{page-break-before:always;break-before:page}}</style>' +
     '</head><body>' + inner + '</body></html>';
-  var blob = new Blob([doc], { type: 'text/html;charset=utf-8;' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href = url;
-  a.download = 'Cardwell_4C_Analysis_' + stamp() + '.html';
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadDocxFromHtml(doc, 'Cardwell_4C_Analysis_' + stamp());
 }
 
 // ── Save / reload analyses (stored centrally in the backend) ───────────────────
@@ -4055,13 +4108,13 @@ function clearWorkspace() {
 var DELIVERABLES = [
   { key:'facilitatorMaster', title:'Facilitator Master (Tier 0)', fmt:'Word (.docx) · Cardwell internal', audience:'Internal',
     desc:'Full depth for the facilitators only: names, component statuses, sentiment reads, gaps and silences, advisor comments, and the full cross-comparison. Built from the on-screen analysis. No model call.' },
-  { key:'leaderNav', title:'Senior Leader Navigation Plan (Tier 1)', fmt:'PDF · client-branded', audience:'Client sponsor',
+  { key:'leaderNav', title:'Senior Leader Navigation Plan (Tier 1)', fmt:'Word (.docx) · client-branded', audience:'Client sponsor',
     desc:'The private pre-session debrief for the senior-most client leader (CEO or department head) only. Facilitator-level depth with names: the landmines to navigate and the guideposts to lean on, read against the OnePage components.' },
   { key:'individual', title:'Individual Report (Tier 2)', fmt:'Word (.docx) · per leader', audience:'That leader',
     desc:'One leader\'s own verbatim answers, organized by the OnePage component each feeds, plus any advisor comments on their input. Pick the respondent, then generate. Built client-side, no model call.' },
-  { key:'summary', title:'Anonymized Themes (Tier 3)', fmt:'PDF · client-branded', audience:'In-room',
+  { key:'summary', title:'Anonymized Themes (Tier 3)', fmt:'Word (.docx) · client-branded', audience:'In-room',
     desc:'The in-room artifact: convergent, divergent, and standout themes across the group by OnePage component, fully anonymized. No names, no attributable quotes.' },
-  { key:'runOfShow', title:'Workshop Run of Show', fmt:'PDF · Cardwell internal', audience:'Internal',
+  { key:'runOfShow', title:'Workshop Run of Show', fmt:'Word (.docx) · Cardwell internal', audience:'Internal',
     desc:'A facilitator run of show built from your uploaded workshop document (used verbatim). Timed activities that drive each objective and outcome, with lead/support roles for your facilitators and slide references.' },
   { key:'deck', title:'Workshop Deck (PPT)', fmt:'PPTX · client-branded', audience:'Client-facing',
     desc:'A client-branded slide deck for the workshop leaders that complements the Run of Show. Slides are referenced by number in the Run of Show.' }
@@ -4391,6 +4444,42 @@ function anthropicComplete(prompt, maxTokens, signal) {
 
 var CARDWELL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 313.1408 262.5304" width="40" height="33"><path fill="#ffffff" d="M75.6378,183.3854c-11.9523-13.3167-18.9947-30.4637-19.8322-48.3379-1.0436-22.2732,7.1502-43.3873,22.7974-59.0339,14.7579-14.7584,34.3794-22.8856,55.2507-22.8856,16.2503,0,31.7339,4.9423,44.7623,14.0924,1.5563,1.093,3.6392.969,4.9839-.3758l31.4705-31.4707c1.6474-1.6474,1.5317-4.421-.2907-5.8724C147.5776-24.022,39.2175-1.3273,6.9287,97.6075c-7.0645,21.6462-7.1796,45.1817-.1677,66.8449,20.8851,64.524,73.974,96.7654,127.0926,96.7654,28.6641,0,57.3345-9.4013,80.9278-28.1926,1.8218-1.451,1.937-4.2224.2902-5.8692l-31.4871-31.4872c-1.3414-1.3414-3.4208-1.4631-4.9751-.3755-31.5899,22.1042-75.9945,18.1489-102.9717-11.9079Z"/><path fill="#ffffff" d="M307.2864,141.6265c5.7181-5.7239,5.7182-14.9981.0002-20.7221l-72.4052-72.4808c-1.5273-1.527-4.0031-1.527-5.5304,0l-31.153,31.1535c-1.5271,1.5271-1.5271,4.0031,0,5.5302l43.3919,43.3919c1.5271,1.5271,1.5271,4.003,0,5.5301l-43.5784,43.5786c-1.5272,1.5273-1.5272,4.0034,0,5.5307l31.1532,31.153c1.527,1.527,4.0031,1.527,5.5301,0l72.5914-72.6651Z"/></svg>';
 
+// ── Table-of-contents + page-break helpers ─────────────────────────────────────
+// Walk bodyHtml, add id="doc-sec-N" to every <h2>, inject a .page-break div
+// before each h2 after the first, and collect entries for the TOC.
+function processBodyForDoc(bodyHtml) {
+  var entries = [];
+  var count = 0;
+  var processed = bodyHtml.replace(/<h2([^>]*)>([\s\S]*?)<\/h2>/gi, function(match, attrs, inner) {
+    count++;
+    var id = 'doc-sec-' + count;
+    var text = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    entries.push({ id: id, text: text });
+    var pb = count > 1 ? '<div class="page-break"></div>' : '';
+    return pb + '<h2' + attrs + ' id="' + id + '">' + inner + '</h2>';
+  });
+  return { html: processed, entries: entries };
+}
+
+function buildTocBlock(entries, c1) {
+  if (!entries || entries.length < 2) return '';
+  var color = c1 || '#00007b';
+  var html = '<div class="doc-toc"><div class="doc-toc-title">Table of Contents</div><ol class="doc-toc-list">';
+  entries.forEach(function(e) {
+    html += '<li><a href="#' + e.id + '">' + e.text + '</a></li>';
+  });
+  html += '</ol></div><div class="page-break"></div>';
+  return html;
+}
+
+// Returns bodyHtml with a TOC prepended (when >= 2 h2 headings exist) and
+// page-break divs injected before every h2 after the first.
+function wrapWithTocAndBreaks(bodyHtml, c1) {
+  var result = processBodyForDoc(bodyHtml);
+  var toc = buildTocBlock(result.entries, c1);
+  return toc + result.html;
+}
+
 function brandedDocHtml(project, o) {
   var useClient = o.brand !== 'cardwell';
   var c1 = (useClient && project && project.color1) || '#00007b';
@@ -4411,11 +4500,12 @@ function brandedDocHtml(project, o) {
     '</div>';
   var meta = '<div class="doc-meta"><span class="aud" style="color:' + audColor + '">Audience: ' + esc(o.audience) + '</span>' +
     '<span class="draft">Draft for Cardwell review</span></div>';
+  var processedBody = wrapWithTocAndBreaks(o.bodyHtml, c1);
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + esc(o.title) + '</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
     '<style>' + docCss(c1, c2) + '</style></head><body>' + banner + meta +
-    '<main>' + o.bodyHtml + '</main>' +
+    '<main>' + processedBody + '</main>' +
     '<footer class="doc-footer">Cardwell · The Cardwell Way · 4C Model. Confidential. This is a draft for the Cardwell project team to review against brand and project outcomes.</footer>' +
     '</body></html>';
 }
@@ -4451,7 +4541,14 @@ function docCss(c1, c2) {
     'td{border:1px solid #E5E7EB;padding:7px 9px;vertical-align:top}' +
     'p.meta{font-size:12px;color:#6B7280;font-weight:600;margin:0 0 8px}' +
     '.doc-footer{max-width:820px;margin:24px auto 0;padding:14px 40px 30px;border-top:1px solid #E5E7EB;font-size:11px;color:#6B7280}' +
-    '@media print{.doc-meta .draft{color:#b45309}}';
+    '.page-break{page-break-before:always;break-before:page;display:block;height:0;margin:0;padding:0}' +
+    '.doc-toc{background:#F5F5F7;border:1px solid #E5E7EB;border-radius:8px;padding:20px 28px;margin:18px 0 24px}' +
+    '.doc-toc-title{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px;font-weight:700;color:' + c1 + ';margin:0 0 12px;border-bottom:2px solid #E5E7EB;padding-bottom:8px}' +
+    '.doc-toc ol{margin:0 0 0 18px;padding:0;counter-reset:toc-counter}' +
+    '.doc-toc li{margin:5px 0;font-size:13px}' +
+    '.doc-toc a{color:' + c1 + ';text-decoration:none;font-weight:600}' +
+    '.doc-toc a:hover{text-decoration:underline}' +
+    '@media print{.page-break{page-break-before:always;break-before:page}.doc-meta .draft{color:#b45309}}';
 }
 
 // ── Build verbatim response text for prompts ───────────────────────────────────
@@ -4513,7 +4610,7 @@ function genLeaderNav(project) {
   var c = new AbortController(); delivAbort.leaderNav = c; renderDelivCards();
   anthropicComplete(prompt, 4500, c.signal).then(function(text){
     var body = stripFrag(text);
-    generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Senior Leader Navigation Plan', audience:'Client sponsor', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SeniorLeaderNavigationPlan') };
+    generatedDocs.leaderNav = { type:'docx', html: brandedDocHtml(project, { title:'Senior Leader Navigation Plan', audience:'Client sponsor', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SeniorLeaderNavigationPlan') };
     delete delivAbort.leaderNav;
     persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
     dStatus('leaderNav','✓ Generated. Preview, then download.','ok');
@@ -4540,7 +4637,7 @@ function genSummary(project) {
   var c = new AbortController(); delivAbort.summary = c; renderDelivCards();
   anthropicComplete(prompt, 7000, c.signal).then(function(text){
     var body = stripFrag(text);
-    generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Anonymized Themes', audience:'In-room', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'AnonymizedThemes') };
+    generatedDocs.summary = { type:'docx', html: brandedDocHtml(project, { title:'Anonymized Themes', audience:'In-room', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'AnonymizedThemes') };
     delete delivAbort.summary;
     persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
     dStatus('summary','✓ Generated. Preview, then download.','ok');
@@ -4574,7 +4671,7 @@ function genWorkshop(project, which) {
   anthropicComplete(prompt, 8000, c.signal).then(function(text){
     var data = parseJsonLoose(text);
     if (!data || !data.runOfShowHtml || !data.slides) throw new Error('Model did not return the expected Run of Show and slides. Try again.');
-    generatedDocs.runOfShow = { type:'html', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
+    generatedDocs.runOfShow = { type:'docx', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
     generatedDocs.deck = { type:'deck', slides: data.slides, project: project, fileBase: fileBaseFor(project,'WorkshopDeck') };
     generatedDocs._workshopSlug = project.slug;
     delete delivAbort.runOfShow; delete delivAbort.deck;
