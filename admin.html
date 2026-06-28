@@ -486,6 +486,10 @@
   .edit-group-hint { font-size:11.5px; color:var(--gray-mid,#5b6172); margin-bottom:6px; }
   .edit-ta { width:100%; font:inherit; font-size:13px; padding:9px 11px; border:1px solid var(--line,#e5e7eb); border-radius:7px; resize:vertical; color:var(--navy-dark,#0b1747); }
   .edit-sec { border:1px solid var(--line,#e5e7eb); border-radius:9px; padding:14px 16px; margin-bottom:14px; }
+  .edit-subsec { border:1px dashed #d7def5; border-radius:8px; padding:10px 13px; margin:10px 0; background:#fafbff; }
+  .edit-status { font:inherit; font-size:13px; padding:4px 8px; border:1px solid var(--line,#e5e7eb); border-radius:6px; color:var(--navy-dark,#0b1747); margin-left:6px; }
+  .edit-input { width:100%; font:inherit; font-size:13px; padding:8px 11px; margin-top:6px; border:1px solid var(--line,#e5e7eb); border-radius:7px; color:var(--navy-dark,#0b1747); }
+  .edit-row { font-size:13px; color:var(--navy-dark,#0b1747); margin-bottom:6px; }
   .edit-sec-head { font-weight:700; color:var(--navy-dark,#0b1747); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
   .report-evidence { margin:6px 0 2px; }
   .report-evidence summary { cursor:pointer; font-size:12px; font-weight:600; color:#254deb; }
@@ -3197,7 +3201,17 @@ function parseStandout(t, oldArr){
 function parseShifts(t){ return parseLines(t).map(function(ln){ var m = ln.split(/=>|→/); return { from: (m[0]||'').trim(), to: (m[1]||'').trim() }; }); }
 function parseCulture(t){ return parseLines(t).map(function(ln){ var m = ln.split('::'); return { dimension: (m[0]||'').trim(), consider: (m[1]||'').trim() }; }); }
 
+// Dispatchers: new schema uses the component editor; legacy keeps the C1-C4 editor.
 function editReport() {
+  if (lastReport && isOnePageSchema(lastReport.data)) return editReportOnePage();
+  return editReportLegacy();
+}
+function saveReportEdits() {
+  if (lastReport && isOnePageSchema(lastReport.data)) return saveReportEditsOnePage();
+  return saveReportEditsLegacy();
+}
+
+function editReportLegacy() {
   if (!lastReport) return;
   var d = lastReport.data;
   var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
@@ -3247,7 +3261,7 @@ function editReport() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function saveReportEdits() {
+function saveReportEditsLegacy() {
   if (!lastReport) return;
   var d = lastReport.data;
   d.executiveSummary = edVal('ed-exec').trim();
@@ -3274,6 +3288,181 @@ function saveReportEdits() {
     cultureGap: parseCulture(edVal('ed-nw-culture'))
   };
   // edits are the advisor's own work: keep the reviewed flag if already set, else leave as draft
+  persistWorkspace();
+  renderReport(lastReport);
+}
+
+// ── OnePage component editor ────────────────────────────────────────────────
+// Divergence lines: a leading "!" marks contradictsConvergence; evidence preserved by text match.
+function mergeDivergentLines(t, oldArr){
+  oldArr = oldArr || [];
+  return parseLines(t).map(function(ln){
+    var contra = false;
+    if (ln.charAt(0) === '!') { contra = true; ln = ln.slice(1).trim(); }
+    var match = null; for (var i = 0; i < oldArr.length; i++) { if (fPoint(oldArr[i]) === ln) { match = oldArr[i]; break; } }
+    return { point: ln, contradictsConvergence: contra || !!(match && match.contradictsConvergence === true), evidence: match ? fEvidence(match) : [] };
+  });
+}
+// Standout lines: "Name | type | point" or "Name | point" or "point"; type/evidence preserved.
+function parseStandoutTyped(t, oldArr){
+  oldArr = oldArr || [];
+  return parseLines(t).map(function(ln){
+    var parts = ln.split('|').map(function(s){ return s.trim(); });
+    var who = '', type = '', pt = '';
+    if (parts.length >= 3 && STANDOUT_TYPES.indexOf(parts[1]) >= 0) { who = parts[0]; type = parts[1]; pt = parts.slice(2).join(' | '); }
+    else if (parts.length === 2) { who = parts[0]; pt = parts[1]; }
+    else { pt = parts[0]; }
+    var match = null; oldArr.forEach(function(o){ if (fPoint(o) === pt) match = o; });
+    if (!type) type = (match && match.type) || 'generative';
+    return { who: who, type: type, point: pt, evidence: match ? fEvidence(match) : [] };
+  });
+}
+
+function editReportOnePage(){
+  if (!lastReport) return;
+  var d = lastReport.data;
+  var pts = function(arr){ return (arr || []).map(fPoint).join('\n'); };
+  var divLines = function(arr){ return (arr || []).map(function(x){ return (x && x.contradictsConvergence ? '!' : '') + fPoint(x); }).join('\n'); };
+  var standoutLines = function(arr){ return (arr || []).map(function(x){ var w = fWho(x); var t = (x && x.type) ? x.type : ''; return (w ? w + ' | ' : '') + (t ? t + ' | ' : '') + fPoint(x); }).join('\n'); };
+  function statusSel(id, val){ return '<select class="edit-status" id="' + id + '">' + STATUS_ORDER.map(function(k){ return '<option value="' + k + '"' + (val === k ? ' selected' : '') + '>' + STATUS[k].marker + ' ' + STATUS[k].label + '</option>'; }).join('') + '</select>'; }
+  function readSel(id, val){ return '<select class="edit-status" id="' + id + '">' + SENTIMENT_READS.map(function(k){ return '<option value="' + k + '"' + (val === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>'; }
+  function ta(id, val, rows, hint){ return (hint ? '<div class="edit-group-hint">' + hint + '</div>' : '') + '<textarea class="edit-ta" id="' + id + '" rows="' + (rows || 3) + '">' + esc(val || '') + '</textarea>'; }
+
+  var html = '<div class="panel-card" id="report-card"><div class="report-edit-wrap">';
+  html += '<div class="report-toolbar">' +
+    '<button class="btn-action btn-primary-sm" onclick="saveReportEdits()">✓ Done editing</button>' +
+    '<button class="btn-action btn-ghost-sm" onclick="renderReport(lastReport)">Cancel</button>' +
+    '<span class="rubric-status">Edit findings to match your judgment. One finding per line. Prefix a divergence line with ! to mark it as contradicting convergence. Standout format: Name | type | point (type is generative or outlier). Evidence stays attached to lines whose text you do not change.</span>' +
+    '</div>';
+
+  html += '<div class="edit-group"><div class="edit-group-label">Executive summary</div>' + ta('ed-exec', d.executiveSummary, 3) + '</div>';
+
+  ONEPAGE_COMPONENTS.forEach(function(cdef){
+    var c = componentByKey(d, cdef.key) || emptyComponentBlock(cdef.key, cdef.label);
+    html += '<div class="edit-sec"><div class="edit-sec-head">' + esc(cdef.label) + ' ' + statusSel('ed-' + cdef.key + '-status', c.status) + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Convergent</div>' + ta('ed-' + cdef.key + '-conv', pts(c.convergent), 3, 'One finding per line.') + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Divergent</div>' + ta('ed-' + cdef.key + '-div', divLines(c.divergent), 3, 'One per line. Prefix with ! if it contradicts convergence.') + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Standout</div>' + ta('ed-' + cdef.key + '-standout', standoutLines(c.standout), 3, 'One per line: Name | type | point.') + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Sentiment</div>' +
+      '<div class="edit-row">Read: ' + readSel('ed-' + cdef.key + '-sent-read', (c.sentiment || {}).read || 'neutral') + '</div>' +
+      ta('ed-' + cdef.key + '-sent-signals', ((c.sentiment || {}).signals || []).join('\n'), 2, 'Signal words or phrases, one per line.') +
+      '<input class="edit-input" id="ed-' + cdef.key + '-sent-flag" value="' + esc((c.sentiment || {}).flag || '') + '" placeholder="flag note for the facilitator"></div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Gaps and silences</div>' + ta('ed-' + cdef.key + '-gaps', pts(c.gaps), 2, 'One per line.') + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Facilitator takeaway (first move)</div>' + ta('ed-' + cdef.key + '-take', c.takeaway, 2) + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Advisor comment (private, level-4 read)</div>' + ta('ed-' + cdef.key + '-comment', c.advisorComment, 2) + '</div>';
+    if (cdef.key === 'operatingModel') {
+      OPERATING_MODEL_SUB.forEach(function(s){
+        var sub = (d.operatingModelSub || {})[s.key] || emptySubBlock();
+        html += '<div class="edit-subsec"><div class="edit-sec-head">' + esc(s.label) + ' ' + statusSel('ed-om-' + s.key + '-status', sub.status) + '</div>';
+        html += '<div class="edit-group"><div class="edit-group-label">Convergent</div>' + ta('ed-om-' + s.key + '-conv', pts(sub.convergent), 2) + '</div>';
+        html += '<div class="edit-group"><div class="edit-group-label">Divergent</div>' + ta('ed-om-' + s.key + '-div', divLines(sub.divergent), 2, 'Prefix ! to contradict convergence.') + '</div>';
+        html += '<div class="edit-group"><div class="edit-group-label">Standout</div>' + ta('ed-om-' + s.key + '-standout', standoutLines(sub.standout), 2, 'Name | type | point.') + '</div>';
+        html += '<div class="edit-group"><div class="edit-group-label">Gaps</div>' + ta('ed-om-' + s.key + '-gaps', pts(sub.gaps), 2) + '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
+
+  html += '<div class="edit-sec"><div class="edit-sec-head">Cross-Cutting Signals</div>';
+  CROSSCUTTING.forEach(function(c){
+    var b = (d.crossCutting || {})[c.key] || { status: 'absent', findings: [] };
+    html += '<div class="edit-subsec"><div class="edit-sec-head">' + esc(c.label) + ' ' + statusSel('ed-cc-' + c.key + '-status', b.status) + '</div>';
+    html += '<div class="edit-group"><div class="edit-group-label">Findings</div>' + ta('ed-cc-' + c.key + '-findings', pts(b.findings), 2, 'One per line.') + '</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="edit-sec"><div class="edit-sec-head">Scorecard Candidates</div>';
+  SCORECARD_CATEGORIES.forEach(function(cat){
+    var items = (d.scorecardCandidates || {})[cat.key] || [];
+    html += '<div class="edit-group"><div class="edit-group-label">' + esc(cat.label) + '</div>' + ta('ed-sc-' + cat.key, items.join('\n'), 2, 'One measure per line.') + '</div>';
+  });
+  html += '</div>';
+
+  var o = d.overall || {};
+  html += '<div class="edit-sec"><div class="edit-sec-head">Overall Roll-Up</div>' +
+    '<div class="edit-group-hint">The status dashboard is rebuilt automatically from the statuses above.</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Strongest convergence</div>' + ta('ed-ov-conv', pts(o.strongestConvergence), 2) + '</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Biggest divergence</div>' + ta('ed-ov-div', pts(o.biggestDivergence), 2) + '</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Watch items</div>' + ta('ed-ov-watch', pts(o.watchItems), 2) + '</div></div>';
+
+  var nw = d.nowWhat || {};
+  html += '<div class="edit-sec"><div class="edit-sec-head">Now What</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Outcome to drive</div>' + ta('ed-nw-outcome', nw.outcome, 2) + '</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Mindset shifts</div>' + ta('ed-nw-mind', (nw.mindsetShifts || []).map(function(p){ return (p.from || '') + ' => ' + (p.to || ''); }).join('\n'), 3, 'One per line, format: from => to.') + '</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Behavior shifts</div>' + ta('ed-nw-beh', (nw.behaviorShifts || []).map(function(p){ return (p.from || '') + ' => ' + (p.to || ''); }).join('\n'), 3, 'One per line, format: from => to.') + '</div>' +
+    '<div class="edit-group"><div class="edit-group-label">Culture gap</div>' + ta('ed-nw-culture', (nw.cultureGap || []).map(function(r){ return (r.dimension || '') + ' :: ' + (r.consider || ''); }).join('\n'), 3, 'One per line, format: dimension :: what to think about.') + '</div></div>';
+
+  html += '</div></div>';
+  document.getElementById('report-area').innerHTML = html;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function saveReportEditsOnePage(){
+  if (!lastReport) return;
+  var d = lastReport.data;
+  d.schemaVersion = SCHEMA_VERSION;
+  d.executiveSummary = edVal('ed-exec').trim();
+
+  var compOld = {}; (d.components || []).forEach(function(c){ compOld[c.key] = c; });
+  d.components = ONEPAGE_COMPONENTS.map(function(cdef){
+    var old = compOld[cdef.key] || emptyComponentBlock(cdef.key, cdef.label);
+    return {
+      key: cdef.key, label: cdef.label,
+      status: edVal('ed-' + cdef.key + '-status') || 'absent',
+      convergent: mergeEvidence(parseLines(edVal('ed-' + cdef.key + '-conv')), old.convergent),
+      divergent: mergeDivergentLines(edVal('ed-' + cdef.key + '-div'), old.divergent),
+      standout: parseStandoutTyped(edVal('ed-' + cdef.key + '-standout'), old.standout),
+      sentiment: {
+        read: edVal('ed-' + cdef.key + '-sent-read') || 'neutral',
+        signals: parseLines(edVal('ed-' + cdef.key + '-sent-signals')),
+        flag: edVal('ed-' + cdef.key + '-sent-flag').trim() || 'inference, facilitator to probe, validate, verify'
+      },
+      gaps: parseLines(edVal('ed-' + cdef.key + '-gaps')),
+      takeaway: edVal('ed-' + cdef.key + '-take').trim(),
+      advisorComment: edVal('ed-' + cdef.key + '-comment')
+    };
+  });
+
+  var omOld = d.operatingModelSub || {}, omNew = {};
+  OPERATING_MODEL_SUB.forEach(function(s){
+    var old = omOld[s.key] || emptySubBlock();
+    omNew[s.key] = {
+      status: edVal('ed-om-' + s.key + '-status') || 'absent',
+      convergent: mergeEvidence(parseLines(edVal('ed-om-' + s.key + '-conv')), old.convergent),
+      divergent: mergeDivergentLines(edVal('ed-om-' + s.key + '-div'), old.divergent),
+      standout: parseStandoutTyped(edVal('ed-om-' + s.key + '-standout'), old.standout),
+      gaps: parseLines(edVal('ed-om-' + s.key + '-gaps'))
+    };
+  });
+  d.operatingModelSub = omNew;
+
+  var ccOld = d.crossCutting || {}, ccNew = {};
+  CROSSCUTTING.forEach(function(c){
+    var old = ccOld[c.key] || { findings: [], feeds: c.feeds };
+    ccNew[c.key] = {
+      status: edVal('ed-cc-' + c.key + '-status') || 'absent',
+      findings: mergeEvidence(parseLines(edVal('ed-cc-' + c.key + '-findings')), old.findings),
+      feeds: (old.feeds && old.feeds.length) ? old.feeds : c.feeds.slice()
+    };
+  });
+  d.crossCutting = ccNew;
+
+  var sc = {}; SCORECARD_CATEGORIES.forEach(function(cat){ sc[cat.key] = parseLines(edVal('ed-sc-' + cat.key)); });
+  d.scorecardCandidates = sc;
+
+  d.overall = {
+    dashboard: deriveDashboard(d).map(function(row){ return { component: row.component, status: row.status }; }),
+    strongestConvergence: parseLines(edVal('ed-ov-conv')),
+    biggestDivergence: parseLines(edVal('ed-ov-div')),
+    watchItems: parseLines(edVal('ed-ov-watch'))
+  };
+  d.nowWhat = {
+    outcome: edVal('ed-nw-outcome').trim(),
+    mindsetShifts: parseShifts(edVal('ed-nw-mind')),
+    behaviorShifts: parseShifts(edVal('ed-nw-beh')),
+    cultureGap: parseCulture(edVal('ed-nw-culture'))
+  };
   persistWorkspace();
   renderReport(lastReport);
 }
@@ -3864,10 +4053,14 @@ function clearWorkspace() {
 }
 
 var DELIVERABLES = [
-  { key:'leaderNav', title:'Leader Navigation Plan', fmt:'PDF · client-branded', audience:'Client-facing',
-    desc:'A private guide for the senior leader and the Cardwell engagement lead. Surfaces hidden landmines that could derail the strategy and the guideposts that drive clarity and execution, to shape the leader’s own development plan.' },
-  { key:'summary', title:'Summary of Findings', fmt:'PDF · client-branded', audience:'Client-facing',
-    desc:'The team’s survey input reported as facts, organized into convergence, divergence, and standout points using verbatim quotes only. No interpretation. Ends with guidance for talking to the team plus a worksheet.' },
+  { key:'facilitatorMaster', title:'Facilitator Master (Tier 0)', fmt:'Word (.docx) · Cardwell internal', audience:'Internal',
+    desc:'Full depth for the facilitators only: names, component statuses, sentiment reads, gaps and silences, advisor comments, and the full cross-comparison. Built from the on-screen analysis. No model call.' },
+  { key:'leaderNav', title:'Senior Leader Navigation Plan (Tier 1)', fmt:'PDF · client-branded', audience:'Client sponsor',
+    desc:'The private pre-session debrief for the senior-most client leader (CEO or department head) only. Facilitator-level depth with names: the landmines to navigate and the guideposts to lean on, read against the OnePage components.' },
+  { key:'individual', title:'Individual Report (Tier 2)', fmt:'Word (.docx) · per leader', audience:'That leader',
+    desc:'One leader\'s own verbatim answers, organized by the OnePage component each feeds, plus any advisor comments on their input. Pick the respondent, then generate. Built client-side, no model call.' },
+  { key:'summary', title:'Anonymized Themes (Tier 3)', fmt:'PDF · client-branded', audience:'In-room',
+    desc:'The in-room artifact: convergent, divergent, and standout themes across the group by OnePage component, fully anonymized. No names, no attributable quotes.' },
   { key:'runOfShow', title:'Workshop Run of Show', fmt:'PDF · Cardwell internal', audience:'Internal',
     desc:'A facilitator run of show built from your uploaded workshop document (used verbatim). Timed activities that drive each objective and outcome, with lead/support roles for your facilitators and slide references.' },
   { key:'deck', title:'Workshop Deck (PPT)', fmt:'PPTX · client-branded', audience:'Client-facing',
@@ -3945,6 +4138,7 @@ function renderDelivCards() {
       '<span class="dcard-aud ' + (d.audience === 'Internal' ? 'aud-internal' : 'aud-client') + '">' + d.audience + '</span></div>' +
       '<div class="dcard-fmt">' + esc(d.fmt) + (seld ? ' · selected' : '') + '</div>' +
       '<div class="dcard-desc">' + esc(d.desc) + '</div>' +
+      (d.key === 'individual' ? '<select class="cfg-select" id="indiv-resp" style="margin:0 0 8px">' + indivRespOptions() + '</select>' : '') +
       sharedLine +
       '<div class="dcard-actions">' + actions + '</div>' +
       '<div class="dcard-status" id="dstatus-' + d.key + '">' + statusInit + '</div>' +
@@ -4283,7 +4477,9 @@ function generateDeliverable(key) {
   // While a generation is in flight, this same button acts as Stop (aborts the call).
   if (delivAbort[key]) { delivAbort[key].abort(); return; }
   var project = getDelivProject();
+  if (key === 'facilitatorMaster') return genFacilitatorMaster(project);
   if (key === 'leaderNav') return genLeaderNav(project);
+  if (key === 'individual') return genIndividual(project);
   if (key === 'summary')   return genSummary(project);
   if (key === 'runOfShow') return genWorkshop(project, 'runOfShow');
   if (key === 'deck')      return genWorkshop(project, 'deck');
@@ -4298,15 +4494,15 @@ function genLeaderNav(project) {
   if (!lastReport) { dStatus('leaderNav','Run or open an analysis first.','err'); return; }
   var leaderName = (project && project.seniorLeaderName) || '';
   var leaderTitle = (project && project.seniorLeaderTitle) || '';
-  var prompt = 'You are creating a confidential Leader Navigation Plan for ' +
-    (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior leader') +
+  var prompt = 'You are creating a confidential Senior Leader Navigation Plan (Tier 1) for ' +
+    (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior-most client leader') +
     (project && project.clientName ? ' at ' + project.clientName : '') + '.\n' +
-    'Audience: this leader and the Cardwell engagement lead only. Purpose: help the leader shape their own development plan to lead the strategy successfully.\n' +
-    'Base everything ONLY on the survey analysis JSON below. Do not invent facts.\n' +
+    'Audience: this senior leader (the CEO or department head) and the Cardwell engagement lead only. It is the private pre-session debrief, so it carries facilitator-level depth WITH names. Purpose: help the leader walk into the workshop knowing where the team truly stands and how to lead building the OnePage.\n' +
+    'Base everything ONLY on the survey analysis JSON below, which is organized by the five Cardwell OnePage components (corePurpose, pinnacle, strategicPriorities, operatingModel with sub-elements, scorecard) plus crossCutting signals (ownership, risk, changeReadiness). Do not invent facts. Quote respondents verbatim and attribute by name where useful.\n' +
     'Identify:\n' +
-    '- LANDMINES: hidden risks and tensions from the team feedback (divergence, watch items, standout concerns) that could derail the strategy if the leader does not address them. For each: what it is, why it is dangerous, and what the leader should do.\n' +
-    '- GUIDEPOSTS: sources of strength and alignment (convergence, takeaways) that will help the leader drive clarity and execution. For each: what it is and how to use it.\n' +
-    '- A short development focus section: 3 to 5 reflective prompts and focus areas for the leader\'s own growth based on the feedback.\n' +
+    '- LANDMINES: hidden risks and tensions across the components (divergent threads, especially any flagged contradictsConvergence; fractured or partial statuses; risk and change-readiness signals; gaps and silences; outlier standouts) that could derail the strategy if the leader does not address them. For each: what it is, which component it sits in, why it is dangerous, and what the leader should do.\n' +
+    '- GUIDEPOSTS: sources of strength (aligned components, convergent threads, generative standouts, component takeaways) the leader can build the OnePage on. For each: what it is, which component, and how to use it.\n' +
+    '- A short development focus section: 3 to 5 reflective prompts for the leader\'s own growth, drawn from the feedback.\n' +
     'Tone: direct, supportive, executive. ' + NO_DASH + '\n' +
     'Return ONLY an HTML fragment (no html, head, or body tags) using ONLY these tags and classes: ' +
     '<p class="lead"> for the opening addressed to the leader; <h2> for section titles (use "Landmines to navigate", "Guideposts to lean on", "Shaping your development plan"); ' +
@@ -4317,7 +4513,7 @@ function genLeaderNav(project) {
   var c = new AbortController(); delivAbort.leaderNav = c; renderDelivCards();
   anthropicComplete(prompt, 4500, c.signal).then(function(text){
     var body = stripFrag(text);
-    generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Leader Navigation Plan', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'LeaderNavigationPlan') };
+    generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Senior Leader Navigation Plan', audience:'Client sponsor', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SeniorLeaderNavigationPlan') };
     delete delivAbort.leaderNav;
     persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
     dStatus('leaderNav','✓ Generated. Preview, then download.','ok');
@@ -4329,21 +4525,22 @@ function genLeaderNav(project) {
 }
 
 function genSummary(project) {
-  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
-    : (project ? allResponses.filter(function(r){ return projKeyOf(r) === project.slug; }) : allResponses.slice());
-  if (!list.length) { dStatus('summary','No responses available. Run an analysis or pick a project with responses.','err'); return; }
-  var prompt = 'You are creating a Summary of Findings for ' + (project && project.clientName ? project.clientName : 'the client') +
+  if (!lastReport) { dStatus('summary','Run or open an analysis first.','err'); return; }
+  var prompt = 'You are creating the Anonymized Themes (Tier 3) in-room artifact for ' + (project && project.clientName ? project.clientName : 'the client') +
     (project && project.projectName ? ' (' + project.projectName + ')' : '') + '.\n' +
-    'This reports the team\'s survey input as facts, organized into Convergence, Divergence, and Standout points.\n' +
-    'CRITICAL: Do NOT interpret, summarize, paraphrase, rank, or editorialize. Use ONLY exact verbatim quotes from the responses below, each attributed to the respondent name. Cluster the quotes under the three headings. Do not add analysis sentences. The facilitators will discuss the honest truths live.\n' +
+    'Audience: shared live in the room with the whole group. It MUST be fully anonymized.\n' +
+    'CRITICAL ANONYMIZATION RULES:\n' +
+    '- Do NOT include any respondent names, initials, roles, or any detail that identifies who said what.\n' +
+    '- Do NOT include attributable verbatim quotes. You may reflect the group\'s shared language, but never tie words to an individual.\n' +
+    '- Report themes across the group only.\n' +
+    'Work from the analysis JSON below, which is organized by the five Cardwell OnePage components plus cross-cutting signals. For each component that has content, report the convergent themes, the divergent themes (the competing framings, stated plainly and without names), and any standout themes (described generically, never as "one leader named X").\n' +
     NO_DASH + '\n' +
-    'Return ONLY an HTML fragment using ONLY: <h2> for the three headings exactly "Convergence", "Divergence", "Standout perspectives"; optional <h3> for a short theme label that is itself drawn from the respondents\' own words; <blockquote> for one verbatim quote; <p class="attr"> for the attribution (the respondent name) under each quote; and <div class="worksheet"><h3>Facilitator notes</h3></div> at the end of each of the three sections for live discussion.\n' +
-    'Then a final section: <h2>Talking with your team</h2> with one <p> of plain, general best practice guidance on how the leader receiving this report should talk with their employees about the strategy (guidance only, not interpretation of the data), then <div class="worksheet"><h3>My plan</h3><ul><li>What I will say</li><li>What I will ask</li><li>What I will commit to</li><li>How I will follow up</li></ul></div>.\n\n' +
-    'VERBATIM RESPONSES:\n' + responsesVerbatimText(list);
+    'Return ONLY an HTML fragment using ONLY: <h2> for each OnePage component label that has content (Core Purpose, Pinnacle, Strategic Priorities, Operating Model, Scorecard) and for "Cross-Cutting Signals"; under each, <h3>Convergent</h3>, <h3>Divergent</h3>, <h3>Standout</h3> as needed with <ul><li> theme items (no names, no attributable quotes); and a <div class="worksheet"><h3>Facilitator notes</h3></div> at the end of each component for live discussion.\n\n' +
+    'ANALYSIS JSON (anonymize everything; never output a name):\n' + JSON.stringify(lastReport.data);
   var c = new AbortController(); delivAbort.summary = c; renderDelivCards();
   anthropicComplete(prompt, 7000, c.signal).then(function(text){
     var body = stripFrag(text);
-    generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Summary of Findings', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SummaryOfFindings') };
+    generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Anonymized Themes', audience:'In-room', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'AnonymizedThemes') };
     delete delivAbort.summary;
     persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
     dStatus('summary','✓ Generated. Preview, then download.','ok');
@@ -4363,6 +4560,7 @@ function genWorkshop(project, which) {
   }
   var prompt = 'You are preparing two linked deliverables for a multi-day strategy workshop for ' +
     (project.clientName || 'the client') + (project.projectName ? ' (' + project.projectName + ')' : '') + '. There are ' + n + ' facilitator(s).\n' +
+    'The workshop\'s job is to build the team\'s Cardwell OnePage: Core Purpose, Pinnacle, three to four Strategic Priorities, the Operating Model (core customer, products and services, channels, value proposition, capacity and funding), and a Scorecard. Where you reference strategy structure, use these OnePage component names, not the C1 to C4 survey categories (the 4Cs are only the survey instrument).\n' +
     'The uploaded workshop document defines the days, dates, times, objectives, and outcomes. Use that content VERBATIM. Do not change, add, or remove any day, date, time, objective, or outcome.\n' +
     'Produce:\n' +
     '1) A facilitator RUN OF SHOW (audience: Cardwell facilitation team only). For each day or session in the document, lay out a timed sequence of recommended activities that will drive the stated objectives and outcomes. For each activity include: a time block, what happens, the purpose tied to a stated outcome, the facilitator assignment for ' + n + ' facilitator(s) (who LEADS and what the other facilitator(s) do at that time), and a reference to the supporting slide number(s) from the deck you design.\n' +
@@ -4396,6 +4594,77 @@ function stripFrag(t) {
   return (t || '').trim().replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
 }
 
+// Tier 0: Facilitator master (.docx). Full depth, names, status, sentiment, gaps,
+// advisor comments. Built client-side from the on-screen analysis; no model call.
+function genFacilitatorMaster(project) {
+  if (!lastReport) { dStatus('facilitatorMaster','Run or open an analysis first.','err'); return; }
+  var body = '<p class="meta">Confidential. Cardwell facilitators only. Full depth: names, component statuses, sentiment reads, gaps and silences, advisor comments, and the full cross-comparison.</p>' +
+    buildLeaderFindingsBody(lastReport);
+  var doc = brandedDocHtml(project, { title:'Facilitator Master', audience:'Internal', brand:'cardwell', bodyHtml: body });
+  generatedDocs.facilitatorMaster = { type:'docx', html: doc, fileBase: fileBaseFor(project, 'FacilitatorMaster') };
+  persistWorkspace(); renderDelivCards();
+  dStatus('facilitatorMaster','✓ Generated. Preview, then download (.docx).','ok');
+}
+
+// Map each survey question to the OnePage component (or cross-cutting signal) it primarily feeds.
+var Q_PRIMARY_COMPONENT = {
+  q1:'corePurpose', q2:'operatingModel', q3:'pinnacle', q4:'operatingModel',
+  q5:'strategicPriorities', q6:'strategicPriorities', q7:'strategicPriorities',
+  q8:'operatingModel', q9:'ownership', q10:'risk', q11:'scorecard', q12:'changeReadiness'
+};
+function qMetaById(){ var map={}; SECTIONS.forEach(function(s){ s.questions.forEach(function(q){ map[q.id]=q; }); }); return map; }
+
+// Tier 2: Individual report (.docx). One leader's verbatim answers, organized by the
+// OnePage component each feeds, plus any advisor comments on their input. No model call.
+function genIndividual(project) {
+  var sel = document.getElementById('indiv-resp');
+  var rowId = sel ? parseInt(sel.value, 10) : 0;
+  if (!rowId) { dStatus('individual','Pick a respondent from the dropdown first.','err'); return; }
+  var r = allResponses.filter(function(x){ return x.rowId === rowId; })[0];
+  if (!r) { dStatus('individual','Could not find that respondent. Refresh responses and try again.','err'); return; }
+  var name = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || 'Respondent';
+  dStatus('individual','Building…','');
+  // Pull this person's advisor comments (per-question), then assemble.
+  fetch(ENDPOINT_URL + '?action=getComments&respKey=' + encodeURIComponent(respKey(r)) + '&rowId=' + encodeURIComponent(rowId) + '&token=' + encodeURIComponent(projToken()))
+    .then(function(res){ return res.json(); })
+    .then(function(j){ return (j && j.comments) || {}; })
+    .catch(function(){ return {}; })
+    .then(function(comments){
+      var qm = qMetaById();
+      // Group order: five components, then the three cross-cutting signals.
+      var groups = ONEPAGE_COMPONENTS.map(function(c){ return { key:c.key, label:c.label }; })
+        .concat(CROSSCUTTING.map(function(c){ return { key:c.key, label:c.label }; }));
+      var body = '<p class="lead">This is your own survey input, organized by the OnePage component each answer most directly informs. Your client team sees only anonymized themes; this report is yours.</p>';
+      groups.forEach(function(g){
+        var qids = Object.keys(Q_PRIMARY_COMPONENT).filter(function(qid){ return Q_PRIMARY_COMPONENT[qid] === g.key; });
+        if (!qids.length) return;
+        var inner = '';
+        qids.forEach(function(qid){
+          var q = qm[qid]; if (!q) return;
+          var ans = (r[qid] || '').trim() || '(no answer)';
+          inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
+          inner += '<blockquote>' + esc(ans) + '</blockquote>';
+          if (comments[qid]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[qid]) + '</p></div>';
+        });
+        if (inner) body += '<h2>' + esc(g.label) + '</h2>' + inner;
+      });
+      var doc = brandedDocHtml(project, { title:'Individual Report: ' + name, audience:'That leader', brand: project ? 'client' : 'cardwell', bodyHtml: body });
+      generatedDocs.individual = { type:'docx', html: doc, fileBase: fileBaseFor(project, 'IndividualReport_' + slugify(name)) };
+      persistWorkspace(); renderDelivCards();
+      dStatus('individual','✓ Generated for ' + name + '. Preview, then download (.docx).','ok');
+    });
+}
+
+// Respondent options for the Individual report dropdown.
+function indivRespOptions() {
+  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses : allResponses.slice();
+  if (!list.length) return '<option value="">No responses loaded</option>';
+  return '<option value="">Choose a respondent…</option>' + list.map(function(r){
+    var nm = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || ('Respondent ' + r.rowId);
+    return '<option value="' + r.rowId + '">' + esc(nm) + '</option>';
+  }).join('');
+}
+
 // ── Preview + download ─────────────────────────────────────────────────────────
 function previewDeliverable(key) {
   var g = generatedDocs[key]; if (!g) return;
@@ -4405,7 +4674,7 @@ function previewDeliverable(key) {
   document.getElementById('preview-sub').textContent = d.fmt;
   var body = document.getElementById('preview-body');
   body.innerHTML = '';
-  if (g.type === 'html') {
+  if (g.type === 'html' || g.type === 'docx') {
     var ifr = document.createElement('iframe');
     ifr.style.cssText = 'width:100%;height:72vh;border:none;background:#fff;display:block';
     ifr.srcdoc = g.html;
@@ -4430,6 +4699,7 @@ function downloadCurrentDeliverable(){ if (currentPreviewKey) downloadDeliverabl
 
 function downloadDeliverable(key) {
   var g = generatedDocs[key]; if (!g) return;
+  if (g.type === 'docx') { downloadDocxFromHtml(g.html, g.fileBase); return; }
   if (g.type === 'html') {
     var w = window.open('', '_blank');
     if (!w) { // popup blocked: fall back to .html download
@@ -4938,7 +5208,119 @@ function lpStatus(msg, cls) {
 }
 
 // Build the leader-facing analysis findings body (self-contained, branded shell adds the styling).
+// Dispatcher: new component schema renders the OnePage leader body; legacy renders C1-C4.
 function buildLeaderFindingsBody(report) {
+  if (report && report.data && isOnePageSchema(report.data)) return buildLeaderFindingsBodyOnePage(report);
+  return buildLeaderFindingsBodyLegacy(report);
+}
+
+// Self-contained inline badges/quotes for the leader doc (brandedDocHtml supplies base CSS).
+function lpEvHtml(ev){ return (ev && ev.length) ? ev.map(function(q){
+  return '<blockquote>' + (q.who ? '<strong>' + esc(q.who) + ': </strong>' : '') + esc(q.quote || q.point || '') + '</blockquote>';
+}).join('') : ''; }
+function lpBadge(text, bg, fg){
+  return '<span style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;padding:1px 7px;border-radius:20px;margin-left:6px;background:' + bg + ';color:' + fg + '">' + esc(text) + '</span>';
+}
+function lpStatusBadge(status){
+  var st = STATUS[status] || STATUS.absent;
+  return '<span style="display:inline-block;font-size:11px;font-weight:700;color:#fff;background:' + st.hex + ';padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle">' + st.marker + ' ' + esc(st.label) + '</span>';
+}
+function lpFindingLi(x){
+  var who = fWho(x), badge = '';
+  if (x && typeof x === 'object') {
+    if (x.type === 'generative') badge += lpBadge('generative', '#E6F4EC', '#1A7F4B');
+    else if (x.type === 'outlier') badge += lpBadge('outlier', '#FEF3C7', '#92400E');
+    if (x.contradictsConvergence === true) badge += lpBadge('contradicts convergence', '#F7ECE7', '#C0392B');
+  }
+  return '<li>' + (who ? '<strong>' + esc(who) + ': </strong>' : '') + esc(fPoint(x)) + badge + lpEvHtml(fEvidence(x)) + '</li>';
+}
+function lpSentimentHtml(sent){
+  if (!sent) return '';
+  var signals = (sent.signals || []).map(esc).join(', ');
+  return '<p class="meta"><strong>Sentiment (inference):</strong> ' + esc(sent.read || 'neutral') +
+    (signals ? ' · signals: ' + signals : '') + '. ' + esc(sent.flag || 'Facilitator to probe, validate, and verify in the room.') + '</p>';
+}
+function lpGapsHtml(gaps){
+  if (!gaps || !gaps.length) return '';
+  return '<h3>Gaps and silences</h3><ul>' + gaps.map(function(g){ return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>';
+}
+
+// New OnePage component layout for the Senior Leader (Tier 1) doc and the leader portal.
+function buildLeaderFindingsBodyOnePage(report){
+  var d = report.data || {}, m = report.meta || {};
+  var h = '';
+  h += '<p class="meta">' + (m.respondents && m.respondents.length ? m.respondents.length + ' respondents · ' : '') +
+       'Generated ' + esc(fmtDateFull(m.when || new Date())) + (m.model ? ' · ' + esc(m.model) : '') + '</p>';
+  if (d.executiveSummary) h += '<h2>Executive Summary</h2><p class="lead">' + esc(d.executiveSummary) + '</p>';
+
+  function compBlock(label, comp, isSub){
+    var head = isSub ? 'h3' : 'h2';
+    var s = '<' + head + '>' + esc(label) + lpStatusBadge(comp.status) + '</' + head + '>';
+    if ((comp.convergent || []).length) s += '<div class="callout guidepost"><h3>Convergent</h3><ul>' + comp.convergent.map(lpFindingLi).join('') + '</ul></div>';
+    if ((comp.divergent || []).length) s += '<div class="callout landmine"><h3>Divergent</h3><ul>' + comp.divergent.map(lpFindingLi).join('') + '</ul></div>';
+    if ((comp.standout || []).length) s += '<h3>Standout</h3><ul>' + comp.standout.map(lpFindingLi).join('') + '</ul>';
+    if (comp.sentiment) s += lpSentimentHtml(comp.sentiment);
+    s += lpGapsHtml(comp.gaps);
+    if (comp.takeaway) s += '<p><strong>Facilitator takeaway (first move):</strong> ' + esc(comp.takeaway) + '</p>';
+    if (comp.advisorComment) s += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comp.advisorComment) + '</p></div>';
+    return s;
+  }
+
+  ONEPAGE_COMPONENTS.forEach(function(cdef){
+    var comp = componentByKey(d, cdef.key) || emptyComponentBlock(cdef.key, cdef.label);
+    h += compBlock(cdef.label, comp, false);
+    if (cdef.key === 'operatingModel') {
+      OPERATING_MODEL_SUB.forEach(function(sub){
+        var b = (d.operatingModelSub || {})[sub.key] || emptySubBlock();
+        h += compBlock(sub.label, b, true);
+      });
+    }
+  });
+
+  // Cross-cutting
+  h += '<h2>Cross-Cutting Signals</h2>';
+  CROSSCUTTING.forEach(function(cdef){
+    var b = (d.crossCutting || {})[cdef.key] || { status: 'absent', findings: [], feeds: cdef.feeds };
+    h += '<h3>' + esc(cdef.label) + lpStatusBadge(b.status) + '</h3>';
+    if ((b.findings || []).length) h += '<ul>' + b.findings.map(lpFindingLi).join('') + '</ul>';
+    h += '<p class="meta">Feeds: ' + ((b.feeds || cdef.feeds || []).map(esc).join(', ') || 'n/a') + '</p>';
+  });
+
+  // Scorecard candidates
+  h += '<h2>Scorecard Candidates</h2>';
+  SCORECARD_CATEGORIES.forEach(function(cat){
+    var items = (d.scorecardCandidates || {})[cat.key] || [];
+    h += '<h3>' + esc(cat.label) + '</h3>' + (items.length ? '<ul>' + items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' : '<p>None captured yet.</p>');
+  });
+
+  // Overall roll-up
+  if (d.overall) {
+    var o = d.overall;
+    h += '<h2>Overall Roll-Up</h2>';
+    if ((o.strongestConvergence || []).length) h += '<div class="callout guidepost"><h3>Strongest Convergence</h3><ul>' + o.strongestConvergence.map(lpFindingLi).join('') + '</ul></div>';
+    if ((o.biggestDivergence || []).length) h += '<div class="callout landmine"><h3>Biggest Divergence</h3><ul>' + o.biggestDivergence.map(lpFindingLi).join('') + '</ul></div>';
+    if ((o.watchItems || []).length) h += '<h3>Watch Items</h3><ul>' + o.watchItems.map(lpFindingLi).join('') + '</ul>';
+  }
+
+  // Now What
+  if (d.nowWhat) {
+    var nw = d.nowWhat;
+    h += '<h2>Now What</h2>';
+    if (nw.outcome) h += '<p class="lead"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</p>';
+    if (nw.mindsetShifts && nw.mindsetShifts.length) h += '<h3>The mindset shifts this requires</h3>' + lpShiftTable(nw.mindsetShifts);
+    if (nw.behaviorShifts && nw.behaviorShifts.length) h += '<h3>The behavior shifts this requires</h3>' + lpShiftTable(nw.behaviorShifts);
+    if (nw.cultureGap && nw.cultureGap.length) {
+      h += '<h3>The culture gap: what to think about for execution</h3>';
+      h += '<p>Prompts to work through together, not verdicts.</p>';
+      h += '<table><thead><tr><th>Dimension</th><th>What to think about for execution</th><th>Where we land / first step</th></tr></thead><tbody>' +
+        nw.cultureGap.map(function(r){ return '<tr><td>' + esc(r.dimension || '') + '</td><td>' + esc(r.consider || '') + '</td><td></td></tr>'; }).join('') +
+        '</tbody></table>';
+    }
+  }
+  return h;
+}
+
+function buildLeaderFindingsBodyLegacy(report) {
   var d = report.data || {}, m = report.meta || {};
   // Leader-facing: render point + attribution + verbatim evidence quotes (always visible for print).
   var lpEv = function(ev){ return (ev && ev.length) ? ev.map(function(q){
