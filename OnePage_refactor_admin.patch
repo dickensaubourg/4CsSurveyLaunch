@@ -1,0 +1,1600 @@
+diff --git a/admin.html b/admin.html
+index 492b58b..f0b55c8 100644
+--- a/admin.html
++++ b/admin.html
+@@ -486,6 +486,10 @@
+   .edit-group-hint { font-size:11.5px; color:var(--gray-mid,#5b6172); margin-bottom:6px; }
+   .edit-ta { width:100%; font:inherit; font-size:13px; padding:9px 11px; border:1px solid var(--line,#e5e7eb); border-radius:7px; resize:vertical; color:var(--navy-dark,#0b1747); }
+   .edit-sec { border:1px solid var(--line,#e5e7eb); border-radius:9px; padding:14px 16px; margin-bottom:14px; }
++  .edit-subsec { border:1px dashed #d7def5; border-radius:8px; padding:10px 13px; margin:10px 0; background:#fafbff; }
++  .edit-status { font:inherit; font-size:13px; padding:4px 8px; border:1px solid var(--line,#e5e7eb); border-radius:6px; color:var(--navy-dark,#0b1747); margin-left:6px; }
++  .edit-input { width:100%; font:inherit; font-size:13px; padding:8px 11px; margin-top:6px; border:1px solid var(--line,#e5e7eb); border-radius:7px; color:var(--navy-dark,#0b1747); }
++  .edit-row { font-size:13px; color:var(--navy-dark,#0b1747); margin-bottom:6px; }
+   .edit-sec-head { font-weight:700; color:var(--navy-dark,#0b1747); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+   .report-evidence { margin:6px 0 2px; }
+   .report-evidence summary { cursor:pointer; font-size:12px; font-weight:600; color:#254deb; }
+@@ -495,6 +499,51 @@
+   .reviewed-badge.yes { background:#E6F4EC; color:#1E7A46; }
+   .reviewed-badge.no { background:#FEF3C7; color:#92400E; }
+ 
++  /* OnePage component render: status chips, dashboard, sub-elements, cross-cutting, scorecard */
++  .status-chip { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.02em; color:#fff;
++    padding:2px 9px; border-radius:20px; margin-right:8px; vertical-align:middle; }
++  .status-aligned   { background:#1A7F4B; }
++  .status-partial   { background:#C77D0A; }
++  .status-fractured { background:#C0392B; }
++  .status-absent    { background:#6B7280; }
++  .report-dashboard { display:flex; flex-wrap:wrap; gap:8px; }
++  .dash-chip { display:inline-block; font-size:11.5px; font-weight:600; color:#fff; padding:5px 11px; border-radius:20px; }
++  .onepage-comp .report-section-name { vertical-align:middle; }
++  .fbadge { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
++    padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; }
++  .fbadge.gen { background:#E6F4EC; color:#1A7F4B; }
++  .fbadge.out { background:#FEF3C7; color:#92400E; }
++  .fbadge.contra { background:#F7ECE7; color:#C0392B; }
++  .report-sentiment { margin:10px 0 6px; padding:9px 13px; background:#F5F5F7; border-radius:8px; font-size:13px; }
++  .report-sentiment .sent-read { font-weight:700; color:#0b1747; }
++  .report-sentiment .sent-signals { color:#5b6172; }
++  .report-sentiment .sent-flag { font-size:11.5px; color:#92400E; margin-top:3px; font-style:italic; }
++  .report-gaps { margin:10px 0 6px; padding:9px 13px; background:#FFF8EC; border:1px solid #f1ddae; border-radius:8px; }
++  .report-gaps-head { font-weight:700; font-size:12.5px; color:#92400E; margin-bottom:4px; }
++  .report-gaps ul { margin:0 0 0 18px; font-size:13px; }
++  .report-advcomment { margin:10px 0 6px; padding:9px 13px; background:#eef2ff; border-left:3px solid #254deb; border-radius:0 6px 6px 0; font-size:13px; }
++  .report-advcomment-edit { margin:10px 0 4px; }
++  .report-advcomment-edit label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:#254deb; margin-bottom:4px; }
++  .advcomment-input { width:100%; font:inherit; font-size:13px; padding:8px 11px; min-height:40px; border:1px dashed #c9d4ff; border-radius:7px; background:#fbfcff; resize:vertical; color:#0b1747; }
++  .advcomment-input:focus { outline:none; border-style:solid; border-color:#254deb; background:#fff; }
++  .om-subs { margin-top:14px; border-top:1px dashed #d7def5; padding-top:10px; }
++  .om-subs-head { font-weight:700; font-size:12.5px; color:#0b1747; margin-bottom:8px; }
++  .om-sub { border:1px solid #e5e7eb; border-radius:8px; margin-bottom:8px; }
++  .om-sub-head { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#fafbff; border-radius:8px 8px 0 0; }
++  .om-sub-name { font-weight:600; color:#0b1747; font-size:13.5px; flex:1; }
++  .om-sub-count { font-size:11px; color:#6B7280; }
++  .om-sub-body { padding:6px 12px 10px; }
++  .cross-row { border:1px solid #e5e7eb; border-radius:8px; margin:8px 0; padding:8px 12px; }
++  .cross-head { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
++  .cross-name { font-weight:700; color:#0b1747; font-size:14px; }
++  .cross-feeds { font-size:11.5px; color:#6B7280; margin-left:auto; }
++  .scorecard-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
++  .scorecard-cat { border:1px solid #e5e7eb; border-radius:8px; padding:10px 13px; }
++  .scorecard-cat-head { font-weight:700; font-size:12.5px; color:#254deb; margin-bottom:6px; }
++  .scorecard-cat ul { margin:0 0 0 18px; font-size:13px; }
++  .scorecard-empty { font-size:12px; color:#9ca3af; }
++  @media (max-width:720px){ .scorecard-grid { grid-template-columns:1fr; } }
++
+   .btn-icon {
+     background: none; border: none; cursor: pointer;
+     padding: 5px 7px; color: var(--gray-mid);
+@@ -1685,7 +1734,8 @@
+     <div class="modal-footer">
+       <button class="btn-delete" onclick="deleteCurrentRow()">Delete Response</button>
+       <span class="cmt-status" id="cmt-status"></span>
+-      <button class="btn-action btn-ghost-sm" onclick="downloadCommentedDoc()">⬇ Download (.docx)</button>
++      <button class="btn-action btn-ghost-sm" onclick="downloadIndivReportFromModal()" title="Generate and download this leader's Individual Report (.docx)">⬇ Individual Report (.docx)</button>
++      <button class="btn-action btn-ghost-sm" onclick="downloadCommentedDoc()">⬇ Commented Q&A (.docx)</button>
+       <button class="btn-action btn-primary-sm" onclick="saveComments()">💾 Save comments</button>
+       <button class="btn-close-modal" onclick="closeModal()">Close</button>
+     </div>
+@@ -1735,6 +1785,136 @@ var SECTIONS = [
+ 
+ var ALL_QS = SECTIONS.flatMap(function(s){ return s.questions; });
+ 
++// ══════════════════════════════════════════════════════════════════════════════
++// OnePage analysis output contract (schemaVersion "onepage-1")
++// Drop-in from onepage-analysis-schema.js. The 4Cs above remain the survey
++// instrument; analysis OUTPUT is organized by these OnePage components.
++// ══════════════════════════════════════════════════════════════════════════════
++var SCHEMA_VERSION = 'onepage-1';
++
++/* The five OnePage components, in render order, with stable keys. */
++var ONEPAGE_COMPONENTS = [
++  { key: 'corePurpose',         label: 'Core Purpose' },
++  { key: 'pinnacle',            label: 'Pinnacle' },
++  { key: 'strategicPriorities', label: 'Strategic Priorities' },
++  { key: 'operatingModel',      label: 'Operating Model' },
++  { key: 'scorecard',           label: 'Scorecard' }
++];
++
++/* The five Operating Model sub-elements, scored separately. */
++var OPERATING_MODEL_SUB = [
++  { key: 'coreCustomer',     label: 'Core Customer' },
++  { key: 'productsServices', label: 'Products and Services' },
++  { key: 'channels',         label: 'Channels' },
++  { key: 'valueProposition', label: 'Value Proposition' },
++  { key: 'capacityFunding',  label: 'Capacity and Funding' }
++];
++
++/* Cross-cutting signals (read across all 12 questions). */
++var CROSSCUTTING = [
++  { key: 'ownership',       label: 'Ownership',          feeds: ['Strategic Priorities', 'Scorecard'] },
++  { key: 'risk',            label: 'Risk and Assumptions', feeds: ['Strategic Priorities', 'Pinnacle'] },
++  { key: 'changeReadiness', label: 'Change Readiness',   feeds: ['Navigating-change session', 'Cadence design'] }
++];
++
++/* Scorecard candidate categories. */
++var SCORECARD_CATEGORIES = [
++  { key: 'financial',       label: 'Financial' },
++  { key: 'people',          label: 'People' },
++  { key: 'productsServices', label: 'Products/Services' },
++  { key: 'customerImpact',  label: 'Customer & Impact' }
++];
++
++/* Convergence status scale, with the framework's colors and markers. */
++var STATUS = {
++  aligned:   { label: 'Aligned',   hex: '#1A7F4B', marker: '🟢' }, // green circle
++  partial:   { label: 'Partial',   hex: '#C77D0A', marker: '🟡' }, // yellow circle
++  fractured: { label: 'Fractured', hex: '#C0392B', marker: '🔴' }, // red circle
++  absent:    { label: 'Absent',    hex: '#6B7280', marker: '⚪' }        // white circle
++};
++var STATUS_ORDER = ['aligned', 'partial', 'fractured', 'absent'];
++
++/* Standout types and sentiment reads (for selects and badges). */
++var STANDOUT_TYPES = ['generative', 'outlier'];
++var SENTIMENT_READS = ['positive', 'neutral', 'guarded', 'resistant', 'mixed'];
++
++/* ---- Factories ----------------------------------------------------------- */
++function emptyComponentBlock(key, label) {
++  return {
++    key: key, label: label, status: 'absent',
++    convergent: [], divergent: [], standout: [],
++    sentiment: { read: 'neutral', signals: [], flag: 'inference, facilitator to probe, validate, verify' },
++    gaps: [], takeaway: '', advisorComment: ''
++  };
++}
++function emptySubBlock() {
++  return { status: 'absent', convergent: [], divergent: [], standout: [], gaps: [] };
++}
++function emptyOnePageReport() {
++  var omSub = {};
++  OPERATING_MODEL_SUB.forEach(function (s) { omSub[s.key] = emptySubBlock(); });
++  var cross = {};
++  CROSSCUTTING.forEach(function (c) { cross[c.key] = { status: 'absent', findings: [], feeds: c.feeds.slice() }; });
++  var score = {};
++  SCORECARD_CATEGORIES.forEach(function (c) { score[c.key] = []; });
++  return {
++    schemaVersion: SCHEMA_VERSION, executiveSummary: '',
++    components: ONEPAGE_COMPONENTS.map(function (c) { return emptyComponentBlock(c.key, c.label); }),
++    operatingModelSub: omSub, crossCutting: cross, scorecardCandidates: score,
++    overall: { dashboard: [], strongestConvergence: [], biggestDivergence: [], watchItems: [] },
++    nowWhat: { outcome: '', mindsetShifts: [], behaviorShifts: [], cultureGap: [] }
++  };
++}
++
++/* ---- Helpers ------------------------------------------------------------- */
++/* True if the data uses the new component schema (vs the legacy C1..C4 sections). */
++function isOnePageSchema(data) {
++  return !!(data && (data.schemaVersion === SCHEMA_VERSION || Array.isArray(data.components)));
++}
++function componentByKey(data, key) {
++  return (data && data.components || []).filter(function (c) { return c.key === key; })[0] || null;
++}
++function deriveDashboard(data) {
++  var rows = [];
++  ONEPAGE_COMPONENTS.forEach(function (c) {
++    var b = componentByKey(data, c.key);
++    rows.push({ component: c.key, label: c.label, status: (b && b.status) || 'absent' });
++  });
++  CROSSCUTTING.forEach(function (c) {
++    var b = (data.crossCutting || {})[c.key];
++    rows.push({ component: c.key, label: c.label, status: (b && b.status) || 'absent' });
++  });
++  return rows;
++}
++/* Lenient validator. Returns { ok, errors[], warnings[] }. Does not throw. */
++function validateOnePageReport(data) {
++  var errors = [], warnings = [];
++  if (!data || typeof data !== 'object') { return { ok: false, errors: ['Response was not a JSON object.'], warnings: warnings }; }
++  if (data.schemaVersion !== SCHEMA_VERSION) { warnings.push('schemaVersion missing or not "' + SCHEMA_VERSION + '".'); }
++  if (!Array.isArray(data.components)) {
++    errors.push('components[] missing.');
++  } else {
++    ONEPAGE_COMPONENTS.forEach(function (c) {
++      var b = componentByKey(data, c.key);
++      if (!b) { errors.push('Missing component: ' + c.key + '.'); return; }
++      if (!STATUS[b.status]) { warnings.push('Component ' + c.key + ' has invalid status "' + b.status + '".'); }
++      ['convergent', 'divergent', 'standout', 'gaps'].forEach(function (f) {
++        if (!Array.isArray(b[f])) { warnings.push('Component ' + c.key + '.' + f + ' is not an array.'); }
++      });
++      if (typeof b.advisorComment !== 'string') { warnings.push('Component ' + c.key + '.advisorComment should be a string.'); }
++    });
++  }
++  if (!data.operatingModelSub) { warnings.push('operatingModelSub missing.'); }
++  else { OPERATING_MODEL_SUB.forEach(function (s) { if (!data.operatingModelSub[s.key]) { warnings.push('Missing Operating Model sub-element: ' + s.key + '.'); } }); }
++  if (!data.crossCutting) { warnings.push('crossCutting missing.'); }
++  else { CROSSCUTTING.forEach(function (c) { if (!data.crossCutting[c.key]) { warnings.push('Missing cross-cutting signal: ' + c.key + '.'); } }); }
++  if (!data.scorecardCandidates) { warnings.push('scorecardCandidates missing.'); }
++  else { SCORECARD_CATEGORIES.forEach(function (c) { if (!Array.isArray(data.scorecardCandidates[c.key])) { warnings.push('scorecardCandidates.' + c.key + ' is not an array.'); } }); }
++  if (!data.overall) { warnings.push('overall missing.'); }
++  if (!data.nowWhat) { warnings.push('nowWhat missing.'); }
++  return { ok: errors.length === 0, errors: errors, warnings: warnings };
++}
++
+ // ── State ─────────────────────────────────────────────────────────────────────
+ var allResponses = [];
+ var sortKey = 'timestamp';
+@@ -2187,10 +2367,10 @@ function docWrap(title, bodyHtml) {
+     '<p style="color:#b45309;font-size:10pt"><b>Confidential. Cardwell advisor working notes.</b> Client responses are reproduced verbatim and unedited; advisor comments are added separately.</p>' +
+     bodyHtml + '</body></html>';
+ }
+-function downloadDocxFromHtml(html, base) {
++function downloadDocxFromHtml(html, base, opts) {
+   try {
+     if (window.htmlDocx && htmlDocx.asBlob) {
+-      var blob = htmlDocx.asBlob(html);
++      var blob = opts ? htmlDocx.asBlob(html, opts) : htmlDocx.asBlob(html);
+       var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = base + '.docx'; a.click(); URL.revokeObjectURL(url);
+       return;
+     }
+@@ -2209,6 +2389,62 @@ function downloadCommentedDoc() {
+   downloadDocxFromHtml(html, 'Cardwell_CommentedResponses_' + slugify(name) + '_' + stamp());
+ }
+ 
++// ── Individual Report download from the open response modal ───────────────────
++// Builds the same Individual Report as the Deliverables tab but uses advisor
++// comments already loaded in the modal textareas (no extra server round-trip).
++function downloadIndivReportFromModal() {
++  if (!currentRowId) return;
++  var r = allResponses.find(function(x){ return x.rowId === currentRowId; });
++  if (!r) return;
++  var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || 'Respondent';
++  // Collect comments from the open modal textareas
++  var comments = {};
++  SECTIONS.forEach(function(s){ s.questions.forEach(function(q){
++    var el = document.getElementById('cmt-' + q.id);
++    if (el && el.value.trim()) comments[q.id] = el.value.trim();
++  }); });
++  var qm = qMetaById();
++  var groups = (typeof ONEPAGE_COMPONENTS !== 'undefined' ? ONEPAGE_COMPONENTS.map(function(c){ return { key:c.key, label:c.label }; }) : [])
++    .concat(typeof CROSSCUTTING !== 'undefined' ? CROSSCUTTING.map(function(c){ return { key:c.key, label:c.label }; }) : []);
++  // Fall back to section-based grouping if OnePage components not defined yet
++  if (!groups.length) {
++    SECTIONS.forEach(function(s){
++      var inner = '';
++      s.questions.forEach(function(q){
++        var ans = (r[q.id] || '').trim() || '(no answer)';
++        inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
++        inner += '<blockquote>' + esc(ans) + '</blockquote>';
++        if (comments[q.id]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[q.id]) + '</p></div>';
++      });
++      groups.push({ _legacy: true, label: s.code + ' · ' + s.title, inner: inner });
++    });
++  }
++  var body = '<p class="lead">This is your own survey input, organized by the OnePage component each answer most directly informs. Your client team sees only anonymized themes; this report is yours.</p>';
++  if (groups[0] && groups[0]._legacy) {
++    groups.forEach(function(g){ if (g.inner) body += '<h2>' + esc(g.label) + '</h2>' + g.inner; });
++  } else {
++    groups.forEach(function(g){
++      var qids = typeof Q_PRIMARY_COMPONENT !== 'undefined'
++        ? Object.keys(Q_PRIMARY_COMPONENT).filter(function(qid){ return Q_PRIMARY_COMPONENT[qid] === g.key; })
++        : [];
++      if (!qids.length) return;
++      var inner = '';
++      qids.forEach(function(qid){
++        var q = qm[qid]; if (!q) return;
++        var ans = (r[qid] || '').trim() || '(no answer)';
++        inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
++        inner += '<blockquote>' + esc(ans) + '</blockquote>';
++        if (comments[qid]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[qid]) + '</p></div>';
++      });
++      if (inner) body += '<h2>' + esc(g.label) + '</h2>' + inner;
++    });
++  }
++  // Use current deliverables project if one is selected, otherwise Cardwell branding
++  var project = (typeof getDelivProject === 'function') ? getDelivProject() : null;
++  var doc = brandedDocHtml(project, { title:'Individual Report: ' + name, audience:'That leader', brand: project ? 'client' : 'cardwell', bodyHtml: body });
++  downloadDocxFromHtml(doc, 'Cardwell_IndividualReport_' + slugify(name) + '_' + stamp());
++}
++
+ function exportAllCommented() {
+   if (!allResponses.length) { alert('No responses to export.'); return; }
+   var btn = document.getElementById('btn-export-commented'); if (btn) { btn.disabled = true; btn.textContent = 'Building…'; }
+@@ -2488,10 +2724,15 @@ function analysisProjectName() {
+ }
+ 
+ // ── Build the verbatim prompt ───────────────────────────────────────────────
++// -- Build the verbatim prompt (OnePage component analysis) -------------------
+ function buildAnalysisPrompt(selected) {
+   var lines = [];
++
+   lines.push('You are an expert organizational-strategy facilitator analyzing leadership survey');
+-  lines.push('responses for ' + analysisProjectName() + ', using the Cardwell Way "4Cs" model.');
++  lines.push('responses for ' + analysisProjectName() + '. The survey uses the Cardwell Way 4Cs as the');
++  lines.push('instrument. Your job is NOT to report by the 4Cs. Your job is to read the responses against');
++  lines.push('the components of a finished Cardwell OnePage strategy and report where the team stands on');
++  lines.push('each, so the leadership alignment workshop can build the OnePage.');
+   lines.push('');
+   lines.push('CRITICAL RULES:');
+   lines.push('- Analyze the responses EXACTLY AS WRITTEN. Do NOT paraphrase, correct, rewrite,');
+@@ -2513,34 +2754,78 @@ function buildAnalysisPrompt(selected) {
+   }
+ 
+   lines.push('');
+-  lines.push('For EACH of the four sections (C1 to C4) identify:');
+-  lines.push('  (a) ALIGNMENT / CONVERGENCE: where respondents clearly share a view or framing.');
+-  lines.push('  (b) DIVERGENCE: where respondents disagree, define things differently, or pull in');
+-  lines.push('      different directions. Name who diverges and how.');
+-  lines.push('  (c) STANDOUT PERSPECTIVES: a point of view or insight from one (or few) respondents');
+-  lines.push('      that stands apart and is worth surfacing to the group.');
+-  lines.push('Then give a facilitator takeaway per section, and an overall roll-up.');
++  lines.push('HOW TO READ (levels of analysis):');
++  lines.push('- Do levels 1 to 3 only: the words used (frequency, repetition, keywords), what the words');
++  lines.push('  mean (is purpose framed as activity or as outcome; what a loaded word like "outcomes"');
++  lines.push('  actually refers to), and the sentiment or tone.');
++  lines.push('- Do NOT do level 4. Do not supply organizational context, history, or politics, and do not');
++  lines.push('  adjudicate what the team should conclude. Leave that to the human facilitator.');
++  lines.push('- Sentiment is always an inference. Flag it for the facilitator to probe, validate, and');
++  lines.push('  verify in the room. Point to the words it rests on. Never state tone as fact.');
++  lines.push('- Surface GAPS AND SILENCES: for each component, name what a finished OnePage needs that no');
++  lines.push('  one addressed. Silence is data.');
+   lines.push('');
+-  lines.push('CRITICAL: go beyond reporting. Reporting the findings is not enough; the client must DO or CHANGE something.');
+-  lines.push('Produce a "Now What" that is action- and outcome-leading: the outcome to drive, the MINDSET shifts and');
+-  lines.push('the BEHAVIOR shifts the team must make (as From / To pairs), and culture-gap guidance (per dimension,');
+-  lines.push('what the team should think about for execution: prompts to work through, NOT proclamations or verdicts');
+-  lines.push('about their culture) to discuss live with the client.');
++  lines.push('THE THREE LENSES, applied to every component:');
++  lines.push('- CONVERGENT: where leaders share a definition, a direction, and ideally a vocabulary.');
++  lines.push('- DIVERGENT: where leaders hold incompatible framings, use the same word to mean different');
++  lines.push('  things, OR where one leader directly contradicts a point that otherwise reads as');
++  lines.push('  convergent. Mark that case with contradictsConvergence = true. Name who and how.');
++  lines.push('- STANDOUT: a single high-signal contribution. type = "generative" if it is worth elevating');
++  lines.push('  to the whole group; type = "outlier" if it is a lone view that may signal a blind spot or');
++  lines.push('  unspoken concern.');
+   lines.push('');
+-  lines.push('Use the facilitation framing for each section as your lens:');
+-  SECTIONS.forEach(function(s){
+-    lines.push('  ' + s.code + ' · ' + s.title + ' (' + s.sub + '): ' + s.facilitator);
+-  });
++  lines.push('MAP EACH QUESTION TO COMPONENTS (many-to-many; a question can feed several, a component');
++  lines.push('draws on several; read all twelve for cross-cutting signal too):');
++  lines.push('- Q1 why we exist -> Core Purpose (also Operating Model: products)');
++  lines.push('- Q2 primary customer -> Operating Model: Core Customer (also Core Purpose; Priorities)');
++  lines.push('- Q3 winning in 2 to 3 years -> Pinnacle (also Scorecard; Priorities)');
++  lines.push('- Q4 AI-enabled and product-focused -> Operating Model: Products and Value Proposition (also Core Purpose; Priorities)');
++  lines.push('- Q5 three things to do exceptionally well -> Strategic Priorities (also Pinnacle; Operating Model)');
++  lines.push('- Q6 one thing to stop, reduce, deprioritize -> Strategic Priorities trade-offs (also Core Purpose guardrails; surfaces values conflict for change readiness)');
++  lines.push('- Q7 where AI creates the biggest opportunity -> Strategic Priorities (also Value Proposition; Pinnacle)');
++  lines.push('- Q8 resources, capabilities, capacity -> Operating Model: Capacity and Funding (also Priorities; Pinnacle)');
++  lines.push('- Q9 who is accountable; gaps or overlaps -> Cross-cutting: Ownership (also Scorecard)');
++  lines.push('- Q10 one risk or assumption -> Cross-cutting: Risk (also Priorities)');
++  lines.push('- Q11 how we will know progress -> Scorecard (also Pinnacle; Ownership)');
++  lines.push('- Q12 what got in the way before -> Cross-cutting: Change readiness (also Operating Model; cadence)');
++  lines.push('');
++  lines.push('COMPONENT STANDARDS (what good looks like; score each against this):');
++  lines.push('- Core Purpose: one outcome-based reason for being, ideally under eight words. Activity lists');
++  lines.push('  are NOT a purpose. It is the guardrail for yes and no.');
++  lines.push('- Pinnacle: a clear, measurable 24 to 36 month destination, a stretch with a finish line.');
++  lines.push('  Adjectives with nothing countable do not qualify.');
++  lines.push('- Strategic Priorities: three or four concentration areas, with real trade-offs and at least');
++  lines.push('  one explicit stop. More than four means spread too thin.');
++  lines.push('- Operating Model (five sub-elements, scored separately): Core Customer, Products and');
++  lines.push('  Services, Channels, Value Proposition, Capacity and Funding. For an internal function such');
++  lines.push('  as Regions L&D, "funding" reads as how the function earns its mandate, budget, and seat at');
++  lines.push('  the table. Reconcile the customer first; it cascades. Expect channels and funding to be');
++  lines.push('  thin; flag as build-live, not as failures.');
++  lines.push('- Scorecard: candidate measures sorted into four categories: Financial, People,');
++  lines.push('  Products/Services, and Customer & Impact. Favor outcome measures over activity counts.');
++  lines.push('  Built incrementally; do not force completion.');
++  lines.push('');
++  lines.push('ASSIGN A STATUS to every component and sub-element: "aligned" (shared definition and');
++  lines.push('language), "partial" (shared direction, differing definitions that change decisions),');
++  lines.push('"fractured" (incompatible framings), "absent" (too few addressed it to read).');
++  lines.push('');
++  lines.push('CROSS-CUTTING: report ownership (Q9), risk (Q10), and change readiness (Q12), each with');
++  lines.push('findings and what they feed. Read all twelve answers for these signals, not only the named');
++  lines.push('question.');
++  lines.push('');
++  lines.push('NOW WHAT: go beyond reporting. Produce the outcome to drive, the MINDSET shifts and the');
++  lines.push('BEHAVIOR shifts the team must make as From / To pairs, and culture-gap prompts to work');
++  lines.push('through live (prompts to think through, NOT verdicts about their culture).');
+   lines.push('');
+   lines.push('Number of respondents: ' + selected.length);
+   lines.push('');
+   lines.push('=================== VERBATIM RESPONSES ===================');
+-  selected.forEach(function(r, i) {
+-    var name = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || ('Respondent ' + (i+1));
++  selected.forEach(function (r, i) {
++    var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || ('Respondent ' + (i + 1));
+     lines.push('');
+     lines.push('### RESPONDENT: ' + name + (r.timestamp ? ' (submitted ' + fmtDate(r.timestamp) + ')' : ''));
+-    SECTIONS.forEach(function(s){
+-      s.questions.forEach(function(q){
++    SECTIONS.forEach(function (s) {
++      s.questions.forEach(function (q) {
+         var a = (r[q.id] || '').trim() || '(no answer)';
+         lines.push('[' + s.code + ' ' + q.num + '] ' + q.text);
+         lines.push('ANSWER: ' + a);
+@@ -2550,34 +2835,108 @@ function buildAnalysisPrompt(selected) {
+   lines.push('');
+   lines.push('=================== END RESPONSES ===================');
+   lines.push('');
+-  lines.push('Respond with ONLY a JSON object (no markdown, no code fences) matching exactly:');
++  lines.push('Respond with ONLY a JSON object (no markdown, no code fences) matching EXACTLY:');
+   lines.push('{');
+-  lines.push('  "executiveSummary": "2-4 sentence overview of the team\'s overall alignment state",');
+-  lines.push('  "sections": [');
++  lines.push('  "schemaVersion": "onepage-1",');
++  lines.push('  "executiveSummary": "2 to 4 sentences on where the team stands against a finished OnePage",');
++  lines.push('  "components": [');
+   lines.push('    {');
+-  lines.push('      "code": "C1",');
+-  lines.push('      "alignment": [{"point": "concise finding", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
+-  lines.push('      "divergence": [{"point": "concise finding naming who and how", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
+-  lines.push('      "standout": [{"who": "Name", "point": "their standout perspective", "evidence": [{"who": "Name", "quote": "verbatim quote"}]}, ...],');
+-  lines.push('      "takeaway": "one facilitator takeaway for this section"');
+-  lines.push('    }, ... (one object for each of C1, C2, C3, C4)');
++  lines.push('      "key": "corePurpose",');
++  lines.push('      "label": "Core Purpose",');
++  lines.push('      "status": "aligned | partial | fractured | absent",');
++  lines.push('      "convergent": [{"point": "...", "evidence": [{"who": "Name", "quote": "verbatim"}]}],');
++  lines.push('      "divergent": [{"point": "...naming who and how", "contradictsConvergence": false, "evidence": [{"who": "Name", "quote": "verbatim"}]}],');
++  lines.push('      "standout": [{"who": "Name", "type": "generative | outlier", "point": "...", "evidence": [{"who": "Name", "quote": "verbatim"}]}],');
++  lines.push('      "sentiment": {"read": "positive | neutral | guarded | resistant | mixed", "signals": ["word or phrase"], "flag": "inference, facilitator to probe, validate, verify"},');
++  lines.push('      "gaps": ["what a finished OnePage needs that no one said"],');
++  lines.push('      "takeaway": "facilitator takeaway phrased as a first move toward the OnePage",');
++  lines.push('      "advisorComment": ""');
++  lines.push('    }');
++  lines.push('    /* one object each, in order: corePurpose, pinnacle, strategicPriorities, operatingModel, scorecard */');
+   lines.push('  ],');
++  lines.push('  "operatingModelSub": {');
++  lines.push('    "coreCustomer":     {"status": "...", "convergent": [], "divergent": [], "standout": [], "gaps": []},');
++  lines.push('    "productsServices": {"status": "...", "convergent": [], "divergent": [], "standout": [], "gaps": []},');
++  lines.push('    "channels":         {"status": "...", "convergent": [], "divergent": [], "standout": [], "gaps": []},');
++  lines.push('    "valueProposition": {"status": "...", "convergent": [], "divergent": [], "standout": [], "gaps": []},');
++  lines.push('    "capacityFunding":  {"status": "...", "convergent": [], "divergent": [], "standout": [], "gaps": []}');
++  lines.push('  },');
++  lines.push('  "crossCutting": {');
++  lines.push('    "ownership":       {"status": "...", "findings": [{"point": "...", "evidence": [{"who": "Name", "quote": "verbatim"}]}], "feeds": ["Strategic Priorities", "Scorecard"]},');
++  lines.push('    "risk":            {"status": "...", "findings": [], "feeds": ["Strategic Priorities", "Pinnacle"]},');
++  lines.push('    "changeReadiness": {"status": "...", "findings": [], "feeds": ["Navigating-change session", "Cadence design"]}');
++  lines.push('  },');
++  lines.push('  "scorecardCandidates": {"financial": [], "people": [], "productsServices": [], "customerImpact": []},');
+   lines.push('  "overall": {');
+-  lines.push('    "strongestConvergence": ["...", ...],');
+-  lines.push('    "biggestDivergence": ["...", ...],');
+-  lines.push('    "watchItems": ["things the facilitator should raise live in the room", ...]');
++  lines.push('    "dashboard": [{"component": "corePurpose", "status": "..."}],');
++  lines.push('    "strongestConvergence": ["..."],');
++  lines.push('    "biggestDivergence": ["..."],');
++  lines.push('    "watchItems": ["things the facilitator should raise live"]');
+   lines.push('  },');
+   lines.push('  "nowWhat": {');
+-  lines.push('    "outcome": "the action/outcome to drive (what changes if this works)",');
+-  lines.push('    "mindsetShifts": [{"from": "today\'s belief", "to": "the belief the strategy needs"}, ...],');
+-  lines.push('    "behaviorShifts": [{"from": "today\'s observable behavior", "to": "the new observable behavior"}, ...],');
+-  lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "what the team should think about for execution (a prompt to work through, not a verdict about their culture)"}, ...]');
++  lines.push('    "outcome": "the action/outcome to drive",');
++  lines.push('    "mindsetShifts": [{"from": "today\'s belief", "to": "the belief the strategy needs"}],');
++  lines.push('    "behaviorShifts": [{"from": "today\'s behavior", "to": "the new observable behavior"}],');
++  lines.push('    "cultureGap": [{"dimension": "e.g. Accountability", "consider": "a prompt to work through, not a verdict"}]');
+   lines.push('  }');
+   lines.push('}');
+-  lines.push('Each finding in alignment, divergence and standout is an object with a "point" and a short "evidence" array of {who, quote} pairs (one or two concise verbatim quotes). Every array may be empty if nothing qualifies, but include all keys. Keep the whole response compact so it is complete, valid JSON.');
++  lines.push('Include all keys even when arrays are empty. advisorComment must be an empty string. Status');
++  lines.push('values must be one of: aligned, partial, fractured, absent. Keep the whole response compact');
++  lines.push('so it is complete, valid JSON.');
++
+   return lines.join('\n');
+ }
+ 
++/* ----------------------------------------------------------------------------
++ * buildRedoComponentPrompt(componentKey, label, note, selected, currentJson)
++ * Drop-in for the prompt portion of redoSection(). Redoes ONE OnePage component
++ * (or use an operatingModelSub key). Returns ONLY that component object.
++ * -------------------------------------------------------------------------- */
++function buildRedoComponentPrompt(componentKey, label, note, selected, currentJson) {
++  var lines = [];
++  lines.push('You previously analyzed leadership survey responses for ' + analysisProjectName() + ' against');
++  lines.push('the Cardwell OnePage components. Redo ONLY the "' + label + '" component (key: ' + componentKey + ').');
++  lines.push('');
++  lines.push('Apply this facilitator instruction:');
++  lines.push(note || '(no specific instruction; improve depth and accuracy)');
++  lines.push('');
++  var rub = effectiveRubricText();
++  if (rub) {
++    lines.push('CARDWELL HOUSE STYLE (follow this):');
++    lines.push(rub);
++    lines.push('');
++  }
++  lines.push('Keep all rules: verbatim quotes only, no misattribution, evidence per finding, levels 1 to 3');
++  lines.push('only, sentiment flagged as inference, surface gaps and silences, assign a status of aligned,');
++  lines.push('partial, fractured, or absent.');
++  lines.push('');
++  if (currentJson) {
++    lines.push('Your current draft for this component (revise it):');
++    lines.push(typeof currentJson === 'string' ? currentJson : JSON.stringify(currentJson));
++    lines.push('');
++  }
++  lines.push('=================== VERBATIM RESPONSES ===================');
++  selected.forEach(function (r, i) {
++    var name = r.fullName || ((r.first || '') + ' ' + (r.last || '')) || ('Respondent ' + (i + 1));
++    lines.push('');
++    lines.push('### RESPONDENT: ' + name);
++    SECTIONS.forEach(function (s) {
++      s.questions.forEach(function (q) {
++        var a = (r[q.id] || '').trim() || '(no answer)';
++        lines.push('[' + s.code + ' ' + q.num + '] ' + q.text);
++        lines.push('ANSWER: ' + a);
++      });
++    });
++  });
++  lines.push('');
++  lines.push('=================== END RESPONSES ===================');
++  lines.push('');
++  lines.push('Return ONLY JSON (no fences) for this one component:');
++  lines.push('{"key":"' + componentKey + '","label":"' + label + '","status":"...","convergent":[{"point":"...","evidence":[{"who":"...","quote":"..."}]}],"divergent":[{"point":"...","contradictsConvergence":false,"evidence":[{"who":"...","quote":"..."}]}],"standout":[{"who":"...","type":"generative","point":"...","evidence":[{"who":"...","quote":"..."}]}],"sentiment":{"read":"...","signals":["..."],"flag":"inference, facilitator to probe, validate, verify"},"gaps":["..."],"takeaway":"...","advisorComment":""}');
++  return lines.join('\n');
++}
++
++
+ // ── Run analysis ────────────────────────────────────────────────────────────
+ var analysisAbort = null;
+ function runAnalysis() {
+@@ -2642,11 +3001,23 @@ function runAnalysis() {
+       throw new Error('The response was cut off before it finished (hit the output limit). Analyze fewer responses at once, or shorten the house-style rubric, then run again.');
+     }
+     var data = parseJsonLoose(text);
+-    if (!data || !data.sections) {
++    // Accept either the new OnePage component schema or a legacy C1-C4 analysis.
++    if (!data || (!Array.isArray(data.components) && !data.sections)) {
+       try { console.log('[4C] Unparseable analysis response (first 800 chars):', (text || '').slice(0, 800)); } catch (e) {}
+       var hint = text ? (' The model returned text that was not valid JSON. First part: "' + text.slice(0, 140).replace(/\s+/g, ' ') + '…"') : ' The model returned an empty response.';
+       throw new Error('The model did not return analysis in the expected format.' + hint + ' Try again, switch models, or use Preview / edit the prompt to simplify it.');
+     }
++    // New schema: validate leniently and log any gaps for inspection (Phase 1: no render yet).
++    if (isOnePageSchema(data)) {
++      var vr = validateOnePageReport(data);
++      try {
++        console.log('[4C] OnePage analysis parsed. schemaVersion=' + (data.schemaVersion || '(none)') +
++          ', components=' + ((data.components || []).length) + ', valid=' + vr.ok);
++        if (vr.errors.length) console.warn('[4C] schema errors:', vr.errors);
++        if (vr.warnings.length) console.warn('[4C] schema warnings:', vr.warnings);
++        console.log('[4C] full analysis object:', data);
++      } catch (e) {}
++    }
+     lastReport = {
+       data: data,
+       meta: {
+@@ -2887,7 +3258,17 @@ function parseStandout(t, oldArr){
+ function parseShifts(t){ return parseLines(t).map(function(ln){ var m = ln.split(/=>|→/); return { from: (m[0]||'').trim(), to: (m[1]||'').trim() }; }); }
+ function parseCulture(t){ return parseLines(t).map(function(ln){ var m = ln.split('::'); return { dimension: (m[0]||'').trim(), consider: (m[1]||'').trim() }; }); }
+ 
++// Dispatchers: new schema uses the component editor; legacy keeps the C1-C4 editor.
+ function editReport() {
++  if (lastReport && isOnePageSchema(lastReport.data)) return editReportOnePage();
++  return editReportLegacy();
++}
++function saveReportEdits() {
++  if (lastReport && isOnePageSchema(lastReport.data)) return saveReportEditsOnePage();
++  return saveReportEditsLegacy();
++}
++
++function editReportLegacy() {
+   if (!lastReport) return;
+   var d = lastReport.data;
+   var secByCode = {}; (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
+@@ -2937,7 +3318,7 @@ function editReport() {
+   window.scrollTo({ top: 0, behavior: 'smooth' });
+ }
+ 
+-function saveReportEdits() {
++function saveReportEditsLegacy() {
+   if (!lastReport) return;
+   var d = lastReport.data;
+   d.executiveSummary = edVal('ed-exec').trim();
+@@ -2968,6 +3349,181 @@ function saveReportEdits() {
+   renderReport(lastReport);
+ }
+ 
++// ── OnePage component editor ────────────────────────────────────────────────
++// Divergence lines: a leading "!" marks contradictsConvergence; evidence preserved by text match.
++function mergeDivergentLines(t, oldArr){
++  oldArr = oldArr || [];
++  return parseLines(t).map(function(ln){
++    var contra = false;
++    if (ln.charAt(0) === '!') { contra = true; ln = ln.slice(1).trim(); }
++    var match = null; for (var i = 0; i < oldArr.length; i++) { if (fPoint(oldArr[i]) === ln) { match = oldArr[i]; break; } }
++    return { point: ln, contradictsConvergence: contra || !!(match && match.contradictsConvergence === true), evidence: match ? fEvidence(match) : [] };
++  });
++}
++// Standout lines: "Name | type | point" or "Name | point" or "point"; type/evidence preserved.
++function parseStandoutTyped(t, oldArr){
++  oldArr = oldArr || [];
++  return parseLines(t).map(function(ln){
++    var parts = ln.split('|').map(function(s){ return s.trim(); });
++    var who = '', type = '', pt = '';
++    if (parts.length >= 3 && STANDOUT_TYPES.indexOf(parts[1]) >= 0) { who = parts[0]; type = parts[1]; pt = parts.slice(2).join(' | '); }
++    else if (parts.length === 2) { who = parts[0]; pt = parts[1]; }
++    else { pt = parts[0]; }
++    var match = null; oldArr.forEach(function(o){ if (fPoint(o) === pt) match = o; });
++    if (!type) type = (match && match.type) || 'generative';
++    return { who: who, type: type, point: pt, evidence: match ? fEvidence(match) : [] };
++  });
++}
++
++function editReportOnePage(){
++  if (!lastReport) return;
++  var d = lastReport.data;
++  var pts = function(arr){ return (arr || []).map(fPoint).join('\n'); };
++  var divLines = function(arr){ return (arr || []).map(function(x){ return (x && x.contradictsConvergence ? '!' : '') + fPoint(x); }).join('\n'); };
++  var standoutLines = function(arr){ return (arr || []).map(function(x){ var w = fWho(x); var t = (x && x.type) ? x.type : ''; return (w ? w + ' | ' : '') + (t ? t + ' | ' : '') + fPoint(x); }).join('\n'); };
++  function statusSel(id, val){ return '<select class="edit-status" id="' + id + '">' + STATUS_ORDER.map(function(k){ return '<option value="' + k + '"' + (val === k ? ' selected' : '') + '>' + STATUS[k].marker + ' ' + STATUS[k].label + '</option>'; }).join('') + '</select>'; }
++  function readSel(id, val){ return '<select class="edit-status" id="' + id + '">' + SENTIMENT_READS.map(function(k){ return '<option value="' + k + '"' + (val === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>'; }
++  function ta(id, val, rows, hint){ return (hint ? '<div class="edit-group-hint">' + hint + '</div>' : '') + '<textarea class="edit-ta" id="' + id + '" rows="' + (rows || 3) + '">' + esc(val || '') + '</textarea>'; }
++
++  var html = '<div class="panel-card" id="report-card"><div class="report-edit-wrap">';
++  html += '<div class="report-toolbar">' +
++    '<button class="btn-action btn-primary-sm" onclick="saveReportEdits()">✓ Done editing</button>' +
++    '<button class="btn-action btn-ghost-sm" onclick="renderReport(lastReport)">Cancel</button>' +
++    '<span class="rubric-status">Edit findings to match your judgment. One finding per line. Prefix a divergence line with ! to mark it as contradicting convergence. Standout format: Name | type | point (type is generative or outlier). Evidence stays attached to lines whose text you do not change.</span>' +
++    '</div>';
++
++  html += '<div class="edit-group"><div class="edit-group-label">Executive summary</div>' + ta('ed-exec', d.executiveSummary, 3) + '</div>';
++
++  ONEPAGE_COMPONENTS.forEach(function(cdef){
++    var c = componentByKey(d, cdef.key) || emptyComponentBlock(cdef.key, cdef.label);
++    html += '<div class="edit-sec"><div class="edit-sec-head">' + esc(cdef.label) + ' ' + statusSel('ed-' + cdef.key + '-status', c.status) + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Convergent</div>' + ta('ed-' + cdef.key + '-conv', pts(c.convergent), 3, 'One finding per line.') + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Divergent</div>' + ta('ed-' + cdef.key + '-div', divLines(c.divergent), 3, 'One per line. Prefix with ! if it contradicts convergence.') + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Standout</div>' + ta('ed-' + cdef.key + '-standout', standoutLines(c.standout), 3, 'One per line: Name | type | point.') + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Sentiment</div>' +
++      '<div class="edit-row">Read: ' + readSel('ed-' + cdef.key + '-sent-read', (c.sentiment || {}).read || 'neutral') + '</div>' +
++      ta('ed-' + cdef.key + '-sent-signals', ((c.sentiment || {}).signals || []).join('\n'), 2, 'Signal words or phrases, one per line.') +
++      '<input class="edit-input" id="ed-' + cdef.key + '-sent-flag" value="' + esc((c.sentiment || {}).flag || '') + '" placeholder="flag note for the facilitator"></div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Gaps and silences</div>' + ta('ed-' + cdef.key + '-gaps', pts(c.gaps), 2, 'One per line.') + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Facilitator takeaway (first move)</div>' + ta('ed-' + cdef.key + '-take', c.takeaway, 2) + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Advisor comment (private, level-4 read)</div>' + ta('ed-' + cdef.key + '-comment', c.advisorComment, 2) + '</div>';
++    if (cdef.key === 'operatingModel') {
++      OPERATING_MODEL_SUB.forEach(function(s){
++        var sub = (d.operatingModelSub || {})[s.key] || emptySubBlock();
++        html += '<div class="edit-subsec"><div class="edit-sec-head">' + esc(s.label) + ' ' + statusSel('ed-om-' + s.key + '-status', sub.status) + '</div>';
++        html += '<div class="edit-group"><div class="edit-group-label">Convergent</div>' + ta('ed-om-' + s.key + '-conv', pts(sub.convergent), 2) + '</div>';
++        html += '<div class="edit-group"><div class="edit-group-label">Divergent</div>' + ta('ed-om-' + s.key + '-div', divLines(sub.divergent), 2, 'Prefix ! to contradict convergence.') + '</div>';
++        html += '<div class="edit-group"><div class="edit-group-label">Standout</div>' + ta('ed-om-' + s.key + '-standout', standoutLines(sub.standout), 2, 'Name | type | point.') + '</div>';
++        html += '<div class="edit-group"><div class="edit-group-label">Gaps</div>' + ta('ed-om-' + s.key + '-gaps', pts(sub.gaps), 2) + '</div>';
++        html += '</div>';
++      });
++    }
++    html += '</div>';
++  });
++
++  html += '<div class="edit-sec"><div class="edit-sec-head">Cross-Cutting Signals</div>';
++  CROSSCUTTING.forEach(function(c){
++    var b = (d.crossCutting || {})[c.key] || { status: 'absent', findings: [] };
++    html += '<div class="edit-subsec"><div class="edit-sec-head">' + esc(c.label) + ' ' + statusSel('ed-cc-' + c.key + '-status', b.status) + '</div>';
++    html += '<div class="edit-group"><div class="edit-group-label">Findings</div>' + ta('ed-cc-' + c.key + '-findings', pts(b.findings), 2, 'One per line.') + '</div></div>';
++  });
++  html += '</div>';
++
++  html += '<div class="edit-sec"><div class="edit-sec-head">Scorecard Candidates</div>';
++  SCORECARD_CATEGORIES.forEach(function(cat){
++    var items = (d.scorecardCandidates || {})[cat.key] || [];
++    html += '<div class="edit-group"><div class="edit-group-label">' + esc(cat.label) + '</div>' + ta('ed-sc-' + cat.key, items.join('\n'), 2, 'One measure per line.') + '</div>';
++  });
++  html += '</div>';
++
++  var o = d.overall || {};
++  html += '<div class="edit-sec"><div class="edit-sec-head">Overall Roll-Up</div>' +
++    '<div class="edit-group-hint">The status dashboard is rebuilt automatically from the statuses above.</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Strongest convergence</div>' + ta('ed-ov-conv', pts(o.strongestConvergence), 2) + '</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Biggest divergence</div>' + ta('ed-ov-div', pts(o.biggestDivergence), 2) + '</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Watch items</div>' + ta('ed-ov-watch', pts(o.watchItems), 2) + '</div></div>';
++
++  var nw = d.nowWhat || {};
++  html += '<div class="edit-sec"><div class="edit-sec-head">Now What</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Outcome to drive</div>' + ta('ed-nw-outcome', nw.outcome, 2) + '</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Mindset shifts</div>' + ta('ed-nw-mind', (nw.mindsetShifts || []).map(function(p){ return (p.from || '') + ' => ' + (p.to || ''); }).join('\n'), 3, 'One per line, format: from => to.') + '</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Behavior shifts</div>' + ta('ed-nw-beh', (nw.behaviorShifts || []).map(function(p){ return (p.from || '') + ' => ' + (p.to || ''); }).join('\n'), 3, 'One per line, format: from => to.') + '</div>' +
++    '<div class="edit-group"><div class="edit-group-label">Culture gap</div>' + ta('ed-nw-culture', (nw.cultureGap || []).map(function(r){ return (r.dimension || '') + ' :: ' + (r.consider || ''); }).join('\n'), 3, 'One per line, format: dimension :: what to think about.') + '</div></div>';
++
++  html += '</div></div>';
++  document.getElementById('report-area').innerHTML = html;
++  window.scrollTo({ top: 0, behavior: 'smooth' });
++}
++
++function saveReportEditsOnePage(){
++  if (!lastReport) return;
++  var d = lastReport.data;
++  d.schemaVersion = SCHEMA_VERSION;
++  d.executiveSummary = edVal('ed-exec').trim();
++
++  var compOld = {}; (d.components || []).forEach(function(c){ compOld[c.key] = c; });
++  d.components = ONEPAGE_COMPONENTS.map(function(cdef){
++    var old = compOld[cdef.key] || emptyComponentBlock(cdef.key, cdef.label);
++    return {
++      key: cdef.key, label: cdef.label,
++      status: edVal('ed-' + cdef.key + '-status') || 'absent',
++      convergent: mergeEvidence(parseLines(edVal('ed-' + cdef.key + '-conv')), old.convergent),
++      divergent: mergeDivergentLines(edVal('ed-' + cdef.key + '-div'), old.divergent),
++      standout: parseStandoutTyped(edVal('ed-' + cdef.key + '-standout'), old.standout),
++      sentiment: {
++        read: edVal('ed-' + cdef.key + '-sent-read') || 'neutral',
++        signals: parseLines(edVal('ed-' + cdef.key + '-sent-signals')),
++        flag: edVal('ed-' + cdef.key + '-sent-flag').trim() || 'inference, facilitator to probe, validate, verify'
++      },
++      gaps: parseLines(edVal('ed-' + cdef.key + '-gaps')),
++      takeaway: edVal('ed-' + cdef.key + '-take').trim(),
++      advisorComment: edVal('ed-' + cdef.key + '-comment')
++    };
++  });
++
++  var omOld = d.operatingModelSub || {}, omNew = {};
++  OPERATING_MODEL_SUB.forEach(function(s){
++    var old = omOld[s.key] || emptySubBlock();
++    omNew[s.key] = {
++      status: edVal('ed-om-' + s.key + '-status') || 'absent',
++      convergent: mergeEvidence(parseLines(edVal('ed-om-' + s.key + '-conv')), old.convergent),
++      divergent: mergeDivergentLines(edVal('ed-om-' + s.key + '-div'), old.divergent),
++      standout: parseStandoutTyped(edVal('ed-om-' + s.key + '-standout'), old.standout),
++      gaps: parseLines(edVal('ed-om-' + s.key + '-gaps'))
++    };
++  });
++  d.operatingModelSub = omNew;
++
++  var ccOld = d.crossCutting || {}, ccNew = {};
++  CROSSCUTTING.forEach(function(c){
++    var old = ccOld[c.key] || { findings: [], feeds: c.feeds };
++    ccNew[c.key] = {
++      status: edVal('ed-cc-' + c.key + '-status') || 'absent',
++      findings: mergeEvidence(parseLines(edVal('ed-cc-' + c.key + '-findings')), old.findings),
++      feeds: (old.feeds && old.feeds.length) ? old.feeds : c.feeds.slice()
++    };
++  });
++  d.crossCutting = ccNew;
++
++  var sc = {}; SCORECARD_CATEGORIES.forEach(function(cat){ sc[cat.key] = parseLines(edVal('ed-sc-' + cat.key)); });
++  d.scorecardCandidates = sc;
++
++  d.overall = {
++    dashboard: deriveDashboard(d).map(function(row){ return { component: row.component, status: row.status }; }),
++    strongestConvergence: parseLines(edVal('ed-ov-conv')),
++    biggestDivergence: parseLines(edVal('ed-ov-div')),
++    watchItems: parseLines(edVal('ed-ov-watch'))
++  };
++  d.nowWhat = {
++    outcome: edVal('ed-nw-outcome').trim(),
++    mindsetShifts: parseShifts(edVal('ed-nw-mind')),
++    behaviorShifts: parseShifts(edVal('ed-nw-beh')),
++    cultureGap: parseCulture(edVal('ed-nw-culture'))
++  };
++  persistWorkspace();
++  renderReport(lastReport);
++}
++
+ // ── Finding normalization (supports string or {point, who, evidence}) ──────────
+ function fPoint(x){ return (x && typeof x === 'object') ? (x.point || x.text || '') : (x || ''); }
+ function fWho(x){ return (x && typeof x === 'object') ? (x.who || '') : ''; }
+@@ -2985,11 +3541,25 @@ function evidenceHtml(ev, alwaysShow){
+ 
+ function findingLi(x, alwaysShowEvidence){
+   var who = fWho(x), point = fPoint(x);
++  var badge = '';
++  if (x && typeof x === 'object') {
++    if (x.type === 'generative') badge += ' <span class="fbadge gen">generative</span>';
++    else if (x.type === 'outlier') badge += ' <span class="fbadge out">outlier</span>';
++    if (x.contradictsConvergence === true) badge += ' <span class="fbadge contra">contradicts convergence</span>';
++  }
+   return '<li>' + (who ? '<span class="who" style="font-weight:700;color:#6B7280">' + esc(who) + ': </span>' : '') +
+-    esc(point) + evidenceHtml(fEvidence(x), alwaysShowEvidence) + '</li>';
++    esc(point) + badge + evidenceHtml(fEvidence(x), alwaysShowEvidence) + '</li>';
+ }
+ 
++// Dispatcher: new OnePage component schema renders the component layout; anything
++// else (legacy C1-C4, or missing components) falls back to the legacy renderer so
++// historical saved analyses still open.
+ function buildReportHtml(report, forExport) {
++  if (report && report.data && isOnePageSchema(report.data)) return buildOnePageReportHtml(report, forExport);
++  return buildReportHtmlLegacy(report, forExport);
++}
++
++function buildReportHtmlLegacy(report, forExport) {
+   var d = report.data, m = report.meta;
+   var secByCode = {};
+   (d.sections || []).forEach(function(s){ secByCode[s.code] = s; });
+@@ -3018,7 +3588,7 @@ function buildReportHtml(report, forExport) {
+         : '<button class="btn-action btn-ghost-sm" onclick="setReviewed(true)">✓ Mark reviewed</button>') +
+       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(true)">⊕ Expand all</button>' +
+       '<button class="btn-action btn-ghost-sm" onclick="expandAllC(false)">⊖ Collapse all</button>' +
+-      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (HTML)</button>' +
++      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (.docx)</button>' +
+       '<button class="btn-action btn-ghost-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
+       '</div>';
+   }
+@@ -3153,24 +3723,264 @@ function findingBlock(cls, label, lis) {
+     '<div class="finding-head">' + label + '</div>' + inner + '</div>';
+ }
+ 
+-// ── Download report as standalone HTML ─────────────────────────────────────────
++// ══════════════════════════════════════════════════════════════════════════════
++// OnePage component renderer (schemaVersion "onepage-1")
++// ══════════════════════════════════════════════════════════════════════════════
++function statusChip(status){
++  var st = STATUS[status] || STATUS.absent;
++  return '<span class="status-chip status-' + (STATUS[status] ? status : 'absent') + '">' + st.marker + ' ' + esc(st.label) + '</span>';
++}
++function onepageLabel(key){
++  var all = ONEPAGE_COMPONENTS.concat(CROSSCUTTING).concat(OPERATING_MODEL_SUB);
++  for (var i = 0; i < all.length; i++) { if (all[i].key === key) return all[i].label; }
++  return key;
++}
++function sentimentHtml(sent){
++  if (!sent) return '';
++  var signals = (sent.signals || []).map(esc).join(', ');
++  return '<div class="report-sentiment">' +
++    '<span class="sent-read">Sentiment (inference): ' + esc(sent.read || 'neutral') + '</span>' +
++    (signals ? '<span class="sent-signals"> · signals: ' + signals + '</span>' : '') +
++    '<div class="sent-flag">' + esc(sent.flag || 'Inference. Facilitator to probe, validate, and verify in the room.') + '</div>' +
++  '</div>';
++}
++function gapsHtml(gaps){
++  if (!gaps || !gaps.length) return '';
++  return '<div class="report-gaps"><div class="report-gaps-head">Gaps and silences</div><ul>' +
++    gaps.map(function(g){ return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div>';
++}
++function advisorCommentHtml(key, comp, forExport){
++  var val = (comp && comp.advisorComment) || '';
++  if (forExport) {
++    if (!val) return '';
++    return '<div class="report-advcomment"><strong>Advisor comment:</strong> ' + esc(val).replace(/\n/g, '<br>') + '</div>';
++  }
++  return '<div class="report-advcomment-edit"><label>Advisor comment (private, level-4 read)</label>' +
++    '<textarea class="advcomment-input" oninput="setComponentComment(\'' + key + '\', this.value)" ' +
++    'placeholder="Your context and judgment. Kept separate from respondent words; never shown to respondents.">' + esc(val) + '</textarea></div>';
++}
++function subElementRow(subKey, label, sub){
++  sub = sub || emptySubBlock();
++  var cnt = (sub.convergent || []).length + (sub.divergent || []).length + (sub.standout || []).length;
++  var body = findingBlock('align', '✓ Convergent', (sub.convergent || []).map(function(x){ return findingLi(x); })) +
++    findingBlock('diverge', '⚡ Divergent', (sub.divergent || []).map(function(x){ return findingLi(x); })) +
++    findingBlock('standout', '★ Standout', (sub.standout || []).map(function(x){ return findingLi(x); })) +
++    gapsHtml(sub.gaps);
++  return '<div class="om-sub"><div class="om-sub-head">' + statusChip(sub.status) +
++    '<span class="om-sub-name">' + esc(label) + '</span><span class="om-sub-count">' + cnt + '</span></div>' +
++    '<div class="om-sub-body">' + body + '</div></div>';
++}
++function crossCuttingBlock(d, forExport){
++  var cc = d.crossCutting || {};
++  var html = '<div class="report-block"><div class="report-section-title"><span class="report-section-name">Cross-Cutting Signals</span></div>' +
++    '<div class="report-section-sub">Read across all twelve questions: ownership, risk, and change readiness.</div>';
++  CROSSCUTTING.forEach(function(cdef){
++    var b = cc[cdef.key] || { status: 'absent', findings: [], feeds: cdef.feeds };
++    html += '<div class="cross-row"><div class="cross-head">' + statusChip(b.status) +
++      '<span class="cross-name">' + esc(cdef.label) + '</span>' +
++      '<span class="cross-feeds">feeds: ' + ((b.feeds || cdef.feeds || []).map(esc).join(', ') || 'n/a') + '</span></div>' +
++      findingBlock('align', 'Findings', (b.findings || []).map(function(x){ return findingLi(x, forExport); })) +
++    '</div>';
++  });
++  return html + '</div>';
++}
++function scorecardBlock(d){
++  var sc = d.scorecardCandidates || {};
++  var html = '<div class="report-block"><div class="report-section-title"><span class="report-section-name">Scorecard Candidates</span></div>' +
++    '<div class="report-section-sub">Candidate measures, sorted into four categories. Favor outcome measures over activity counts.</div>' +
++    '<div class="scorecard-grid">';
++  SCORECARD_CATEGORIES.forEach(function(cat){
++    var items = sc[cat.key] || [];
++    html += '<div class="scorecard-cat"><div class="scorecard-cat-head">' + esc(cat.label) + '</div>' +
++      (items.length ? '<ul>' + items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'
++                    : '<div class="scorecard-empty">None captured yet.</div>') + '</div>';
++  });
++  return html + '</div></div>';
++}
++function dashboardHtml(d){
++  var dash = (d.overall && d.overall.dashboard && d.overall.dashboard.length) ? d.overall.dashboard : deriveDashboard(d);
++  var chips = dash.map(function(row){
++    var st = STATUS[row.status] || STATUS.absent;
++    var sc = STATUS[row.status] ? row.status : 'absent';
++    return '<span class="dash-chip status-' + sc + '" title="' + esc((row.label || onepageLabel(row.component))) + ': ' + esc(st.label) + '">' +
++      st.marker + ' ' + esc(row.label || onepageLabel(row.component)) + '</span>';
++  }).join('');
++  return '<div class="report-block"><div class="report-section-title"><span class="report-section-name">Status Dashboard</span></div>' +
++    '<div class="report-dashboard">' + chips + '</div></div>';
++}
++
++function buildOnePageReportHtml(report, forExport){
++  var d = report.data, m = report.meta;
++  var html = '';
++  html += '<div class="report-head">' +
++    '<div class="report-eyebrow">The Cardwell Way · 4Cs survey · OnePage analysis</div>' +
++    '<div class="report-title">OnePage Readiness Analysis</div>' +
++    '<div class="report-meta">' +
++      m.respondents.length + ' respondent' + (m.respondents.length !== 1 ? 's' : '') + ': ' + esc(m.respondents.join(', ')) + '<br>' +
++      'Generated ' + fmtDateFull(m.when) + ' · ' + esc(m.model) +
++    '</div></div>';
++
++  html += '<div class="report-body">';
++
++  if (!forExport) {
++    var rv = m.reviewed
++      ? '<span class="reviewed-badge yes">✓ Advisor reviewed' + (m.reviewedBy ? ' · ' + esc(m.reviewedBy) : '') + '</span>'
++      : '<span class="reviewed-badge no">AI draft, not yet reviewed</span>';
++    html += '<div class="report-toolbar">' +
++      rv +
++      '<button class="btn-action btn-primary-sm" onclick="saveAnalysis()">💾 Save analysis</button>' +
++      '<button class="btn-action btn-ghost-sm" onclick="editReport()">✎ Edit findings</button>' +
++      (m.reviewed
++        ? '<button class="btn-action btn-ghost-sm" onclick="setReviewed(false)">Unmark reviewed</button>'
++        : '<button class="btn-action btn-ghost-sm" onclick="setReviewed(true)">✓ Mark reviewed</button>') +
++      '<button class="btn-action btn-ghost-sm" onclick="expandAllC(true)">⊕ Expand all</button>' +
++      '<button class="btn-action btn-ghost-sm" onclick="expandAllC(false)">⊖ Collapse all</button>' +
++      '<button class="btn-action btn-ghost-sm" onclick="downloadReport()">⬇ Download report (.docx)</button>' +
++      '<button class="btn-action btn-ghost-sm" onclick="window.print()">⎙ Print / Save PDF</button>' +
++      '</div>';
++  }
++
++  if (d.executiveSummary) {
++    html += '<div class="report-block">' +
++      '<div class="report-section-title"><span class="report-section-name">Executive Summary</span></div>' +
++      '<div class="report-exec">' + esc(d.executiveSummary) + '</div></div>';
++  }
++
++  // At-a-glance status dashboard
++  html += dashboardHtml(d);
++
++  // The five OnePage components, in fixed order
++  ONEPAGE_COMPONENTS.forEach(function(cdef){
++    var comp = componentByKey(d, cdef.key) || emptyComponentBlock(cdef.key, cdef.label);
++    var cnt = (comp.convergent || []).length + (comp.divergent || []).length + (comp.standout || []).length;
++    html += '<div class="report-block report-c onepage-comp" id="reportc-' + cdef.key + '">';
++    html += '<div class="report-c-head" onclick="toggleC(\'' + cdef.key + '\')">' +
++      '<div class="report-section-title" style="margin-bottom:0">' +
++        '<span class="report-c-chevron">▾</span>' + statusChip(comp.status) +
++        '<span class="report-section-name">' + esc(cdef.label) + '</span></div>' +
++      '<span class="report-c-count">' + cnt + ' finding' + (cnt !== 1 ? 's' : '') + '</span>' +
++    '</div>';
++    html += '<div class="report-c-body">';
++    if (!forExport) {
++      html += '<div style="margin:0 0 10px"><button class="btn-action btn-ghost-sm" onclick="redoComponent(\'' + cdef.key + '\')">↻ Redo this component</button></div>';
++    }
++    html += findingBlock('align', '✓ Convergent', (comp.convergent || []).map(function(x){ return findingLi(x, forExport); }));
++    html += findingBlock('diverge', '⚡ Divergent', (comp.divergent || []).map(function(x){ return findingLi(x, forExport); }));
++    html += findingBlock('standout', '★ Standout', (comp.standout || []).map(function(x){ return findingLi(x, forExport); }));
++    html += sentimentHtml(comp.sentiment);
++    html += gapsHtml(comp.gaps);
++    if (comp.takeaway) html += '<div class="report-takeaway"><strong>Facilitator takeaway (first move):</strong> ' + esc(comp.takeaway) + '</div>';
++    html += advisorCommentHtml(cdef.key, comp, forExport);
++    // Operating Model: nested sub-elements
++    if (cdef.key === 'operatingModel') {
++      html += '<div class="om-subs"><div class="om-subs-head">Operating Model sub-elements</div>';
++      OPERATING_MODEL_SUB.forEach(function(s){ html += subElementRow(s.key, s.label, (d.operatingModelSub || {})[s.key]); });
++      html += '</div>';
++    }
++    html += '</div></div>'; // report-c-body, report-c
++  });
++
++  // Cross-cutting + scorecard
++  html += crossCuttingBlock(d, forExport);
++  html += scorecardBlock(d);
++
++  // Overall roll-up (same shape as legacy)
++  if (d.overall) {
++    var o = d.overall;
++    html += '<div class="report-block">' +
++      '<div class="report-section-title"><span class="report-section-name">Overall Roll-Up</span></div>' +
++      '<div class="overall-grid">' +
++        findingBlock('align', '✓ Strongest Convergence', (o.strongestConvergence || []).map(function(x){ return findingLi(x, forExport); })) +
++        findingBlock('diverge', '⚡ Biggest Divergence', (o.biggestDivergence || []).map(function(x){ return findingLi(x, forExport); })) +
++        findingBlock('standout', '◎ Watch Items', (o.watchItems || []).map(function(x){ return findingLi(x, forExport); })) +
++      '</div></div>';
++  }
++
++  // Now What (unchanged shape)
++  if (d.nowWhat) {
++    var nw = d.nowWhat;
++    html += '<div class="report-block nowwhat-block">';
++    html += '<div class="report-section-title"><span class="report-section-name">Now What</span></div>';
++    html += '<div class="report-section-sub">Reporting the findings is not the work. Building the OnePage is.</div>';
++    if (nw.outcome) html += '<div class="nowwhat-outcome"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</div>';
++    if (nw.mindsetShifts && nw.mindsetShifts.length) html += '<div class="shift-head">The mindset shifts this requires</div>' + fromToGrid(nw.mindsetShifts);
++    if (nw.behaviorShifts && nw.behaviorShifts.length) html += '<div class="shift-head">The behavior shifts this requires</div>' + fromToGrid(nw.behaviorShifts);
++    if (nw.cultureGap && nw.cultureGap.length) {
++      html += '<div class="shift-head">The culture gap: what to think about for execution</div>';
++      html += '<div class="report-section-sub" style="margin-bottom:10px">Prompts to work through together, not verdicts about the culture.</div>';
++      html += cultureGapTable(nw.cultureGap);
++    }
++    html += '</div>';
++  }
++
++  // Inline deliverable cards (seam to the OnePage tool)
++  if (!forExport) {
++    html += '<div class="report-block deliverables-block">' +
++      '<div class="report-section-title"><span class="report-section-name">Facilitation Deliverables</span></div>' +
++      '<div class="report-section-sub">This analysis is the source for the client session package and the first-pass OnePage. Generate these in the Deliverables tab:</div>' +
++      '<div class="deliverables-grid">' +
++        deliverableCard('Facilitator master', 'Word (.docx)', 'Internal', 'Full depth: names, status, sentiment, gaps, advisor comments, cross-comparison.') +
++        deliverableCard('Senior Leader brief', 'Word (.docx)', 'Client sponsor', 'Facilitator-level depth for the CEO or department head; their eyes only.') +
++        deliverableCard('Anonymized themes', 'Word (.docx)', 'In-room', 'Convergent, divergent, standout across the group, no names, no attributable quotes.') +
++        deliverableCard('Individual report', 'Word (.docx)', 'That leader', 'A leader\'s own answers plus the component read of their input.') +
++      '</div>' +
++      '<div class="report-section-sub" style="margin-top:12px">Phase 5 wires these tiers to the generators.</div>' +
++      '</div>';
++  }
++
++  html += '</div>'; // report-body
++  return '<div class="panel-card" id="report-card" style="overflow:visible">' + html + '</div>';
++}
++
++// Redo one OnePage component with a facilitator note (new schema only).
++function redoComponent(key){
++  if (!lastReport) return;
++  var apiKey = (document.getElementById('api-key').value || '').trim();
++  if (!apiKey) { showRunError('Enter your Anthropic API key first.'); return; }
++  var cdef = ONEPAGE_COMPONENTS.filter(function(c){ return c.key === key; })[0]; if (!cdef) return;
++  var note = prompt('What should change about ' + cdef.label + '?\n\ne.g. "You over-called divergence. Only flag genuine conflict, not different wording."', '');
++  if (note === null) return;
++  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
++    : allResponses.filter(function(r){ return selectedIds[r.rowId]; });
++  if (!list.length) { alert('No responses are in context. Re-open or re-run the analysis, then redo a component.'); return; }
++  var current = componentByKey(lastReport.data, key);
++  var p = buildRedoComponentPrompt(key, cdef.label, note, list, current);
++  alert('Redoing ' + cdef.label + '. This calls the model for just this component; the rest is untouched.');
++  anthropicComplete(p, 3000).then(function(text){
++    var comp = parseJsonLoose(text);
++    if (!comp || !comp.key) throw new Error('Could not parse the component response. Try again.');
++    comp.key = key; comp.label = cdef.label;
++    if (typeof comp.advisorComment !== 'string') comp.advisorComment = (current && current.advisorComment) || '';
++    var arr = lastReport.data.components || (lastReport.data.components = []);
++    var idx = -1; for (var i = 0; i < arr.length; i++) { if (arr[i].key === key) { idx = i; break; } }
++    if (idx >= 0) arr[idx] = comp; else arr.push(comp);
++    lastReport.meta.reviewed = false; lastReport.meta.reviewedBy = '';
++    persistWorkspace();
++    renderReport(lastReport);
++  }).catch(function(e){ if (e && e.name === 'AbortError') return; alert('Redo failed: ' + e.message); });
++}
++
++// Inline edit of a component's advisor comment from the report (screen mode).
++function setComponentComment(key, val){
++  if (!lastReport) return;
++  var comp = componentByKey(lastReport.data, key);
++  if (comp) { comp.advisorComment = val; persistWorkspace(); }
++}
++
++// ── Download report as Word (.docx) ────────────────────────────────────────────
+ function downloadReport() {
+   if (!lastReport) return;
+   var inner = buildReportHtml(lastReport, true);
+   var styles = document.querySelector('style').innerHTML;
+   var doc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+     '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+-    '<title>4C Analysis · Regions L&D</title>' +
++    '<title>4C Analysis</title>' +
+     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
+-    '<style>' + styles + ' body{padding:28px;max-width:1000px;margin:0 auto;background:#fff}</style>' +
++    '<style>' + styles + ' body{padding:28px;max-width:1000px;margin:0 auto;background:#fff}' +
++    '.page-break{page-break-before:always;break-before:page;display:block;height:0;margin:0;padding:0}' +
++    '@media print{.page-break{page-break-before:always;break-before:page}}</style>' +
+     '</head><body>' + inner + '</body></html>';
+-  var blob = new Blob([doc], { type: 'text/html;charset=utf-8;' });
+-  var url  = URL.createObjectURL(blob);
+-  var a    = document.createElement('a');
+-  a.href = url;
+-  a.download = 'Cardwell_4C_Analysis_' + stamp() + '.html';
+-  a.click();
+-  URL.revokeObjectURL(url);
++  downloadDocxFromHtml(doc, 'Cardwell_4C_Analysis_' + stamp());
+ }
+ 
+ // ── Save / reload analyses (stored centrally in the backend) ───────────────────
+@@ -3296,11 +4106,15 @@ function clearWorkspace() {
+ }
+ 
+ var DELIVERABLES = [
+-  { key:'leaderNav', title:'Leader Navigation Plan', fmt:'PDF · client-branded', audience:'Client-facing',
+-    desc:'A private guide for the senior leader and the Cardwell engagement lead. Surfaces hidden landmines that could derail the strategy and the guideposts that drive clarity and execution, to shape the leader’s own development plan.' },
+-  { key:'summary', title:'Summary of Findings', fmt:'PDF · client-branded', audience:'Client-facing',
+-    desc:'The team’s survey input reported as facts, organized into convergence, divergence, and standout points using verbatim quotes only. No interpretation. Ends with guidance for talking to the team plus a worksheet.' },
+-  { key:'runOfShow', title:'Workshop Run of Show', fmt:'PDF · Cardwell internal', audience:'Internal',
++  { key:'facilitatorMaster', title:'Facilitator Master (Tier 0)', fmt:'Word (.docx) · landscape · Cardwell internal', audience:'Internal',
++    desc:'Full depth for the facilitators only, laid out dense and landscape with tables: names, component statuses, sentiment reads, gaps and silences, advisor comments, blank facilitator-notes rows, and the full cross-comparison. Built from the on-screen analysis. No model call.' },
++  { key:'leaderNav', title:'Senior Leader Navigation Plan (Tier 1)', fmt:'Word (.docx) · client-branded', audience:'Client sponsor',
++    desc:'The private pre-session debrief for the senior-most client leader (CEO or department head) only. Facilitator-level depth with names: the landmines to navigate and the guideposts to lean on, read against the OnePage components.' },
++  { key:'individual', title:'Individual Report (Tier 2)', fmt:'Word (.docx) · per leader', audience:'That leader',
++    desc:'One leader\'s own verbatim answers, organized by the OnePage component each feeds, plus any advisor comments on their input. Pick the respondent, then generate. Built client-side, no model call.' },
++  { key:'summary', title:'Anonymized Themes (Tier 3)', fmt:'Word (.docx) · client-branded', audience:'In-room',
++    desc:'Shared with the responding leaders alongside their Individual reports: convergent, divergent, and standout themes by OnePage component, fully anonymized (no names, no attributable quotes), grounded strictly in the analysis so it cannot contradict the Senior Leader report. No facilitator notes.' },
++  { key:'runOfShow', title:'Workshop Run of Show', fmt:'Word (.docx) · Cardwell internal', audience:'Internal',
+     desc:'A facilitator run of show built from your uploaded workshop document (used verbatim). Timed activities that drive each objective and outcome, with lead/support roles for your facilitators and slide references.' },
+   { key:'deck', title:'Workshop Deck (PPT)', fmt:'PPTX · client-branded', audience:'Client-facing',
+     desc:'A client-branded slide deck for the workshop leaders that complements the Run of Show. Slides are referenced by number in the Run of Show.' }
+@@ -3377,6 +4191,7 @@ function renderDelivCards() {
+       '<span class="dcard-aud ' + (d.audience === 'Internal' ? 'aud-internal' : 'aud-client') + '">' + d.audience + '</span></div>' +
+       '<div class="dcard-fmt">' + esc(d.fmt) + (seld ? ' · selected' : '') + '</div>' +
+       '<div class="dcard-desc">' + esc(d.desc) + '</div>' +
++      (d.key === 'individual' ? '<select class="cfg-select" id="indiv-resp" style="margin:0 0 8px">' + indivRespOptions() + '</select>' : '') +
+       sharedLine +
+       '<div class="dcard-actions">' + actions + '</div>' +
+       '<div class="dcard-status" id="dstatus-' + d.key + '">' + statusInit + '</div>' +
+@@ -3629,6 +4444,42 @@ function anthropicComplete(prompt, maxTokens, signal) {
+ 
+ var CARDWELL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 313.1408 262.5304" width="40" height="33"><path fill="#ffffff" d="M75.6378,183.3854c-11.9523-13.3167-18.9947-30.4637-19.8322-48.3379-1.0436-22.2732,7.1502-43.3873,22.7974-59.0339,14.7579-14.7584,34.3794-22.8856,55.2507-22.8856,16.2503,0,31.7339,4.9423,44.7623,14.0924,1.5563,1.093,3.6392.969,4.9839-.3758l31.4705-31.4707c1.6474-1.6474,1.5317-4.421-.2907-5.8724C147.5776-24.022,39.2175-1.3273,6.9287,97.6075c-7.0645,21.6462-7.1796,45.1817-.1677,66.8449,20.8851,64.524,73.974,96.7654,127.0926,96.7654,28.6641,0,57.3345-9.4013,80.9278-28.1926,1.8218-1.451,1.937-4.2224.2902-5.8692l-31.4871-31.4872c-1.3414-1.3414-3.4208-1.4631-4.9751-.3755-31.5899,22.1042-75.9945,18.1489-102.9717-11.9079Z"/><path fill="#ffffff" d="M307.2864,141.6265c5.7181-5.7239,5.7182-14.9981.0002-20.7221l-72.4052-72.4808c-1.5273-1.527-4.0031-1.527-5.5304,0l-31.153,31.1535c-1.5271,1.5271-1.5271,4.0031,0,5.5302l43.3919,43.3919c1.5271,1.5271,1.5271,4.003,0,5.5301l-43.5784,43.5786c-1.5272,1.5273-1.5272,4.0034,0,5.5307l31.1532,31.153c1.527,1.527,4.0031,1.527,5.5301,0l72.5914-72.6651Z"/></svg>';
+ 
++// ── Table-of-contents + page-break helpers ─────────────────────────────────────
++// Walk bodyHtml, add id="doc-sec-N" to every <h2>, inject a .page-break div
++// before each h2 after the first, and collect entries for the TOC.
++function processBodyForDoc(bodyHtml) {
++  var entries = [];
++  var count = 0;
++  var processed = bodyHtml.replace(/<h2([^>]*)>([\s\S]*?)<\/h2>/gi, function(match, attrs, inner) {
++    count++;
++    var id = 'doc-sec-' + count;
++    var text = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
++    entries.push({ id: id, text: text });
++    var pb = count > 1 ? '<div class="page-break"></div>' : '';
++    return pb + '<h2' + attrs + ' id="' + id + '">' + inner + '</h2>';
++  });
++  return { html: processed, entries: entries };
++}
++
++function buildTocBlock(entries, c1) {
++  if (!entries || entries.length < 2) return '';
++  var color = c1 || '#00007b';
++  var html = '<div class="doc-toc"><div class="doc-toc-title">Table of Contents</div><ol class="doc-toc-list">';
++  entries.forEach(function(e) {
++    html += '<li><a href="#' + e.id + '">' + e.text + '</a></li>';
++  });
++  html += '</ol></div><div class="page-break"></div>';
++  return html;
++}
++
++// Returns bodyHtml with a TOC prepended (when >= 2 h2 headings exist) and
++// page-break divs injected before every h2 after the first.
++function wrapWithTocAndBreaks(bodyHtml, c1) {
++  var result = processBodyForDoc(bodyHtml);
++  var toc = buildTocBlock(result.entries, c1);
++  return toc + result.html;
++}
++
+ function brandedDocHtml(project, o) {
+   var useClient = o.brand !== 'cardwell';
+   var c1 = (useClient && project && project.color1) || '#00007b';
+@@ -3649,11 +4500,12 @@ function brandedDocHtml(project, o) {
+     '</div>';
+   var meta = '<div class="doc-meta"><span class="aud" style="color:' + audColor + '">Audience: ' + esc(o.audience) + '</span>' +
+     '<span class="draft">Draft for Cardwell review</span></div>';
++  var processedBody = wrapWithTocAndBreaks(o.bodyHtml, c1);
+   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+     '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + esc(o.title) + '</title>' +
+     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">' +
+     '<style>' + docCss(c1, c2) + '</style></head><body>' + banner + meta +
+-    '<main>' + o.bodyHtml + '</main>' +
++    '<main>' + processedBody + '</main>' +
+     '<footer class="doc-footer">Cardwell · The Cardwell Way · 4C Model. Confidential. This is a draft for the Cardwell project team to review against brand and project outcomes.</footer>' +
+     '</body></html>';
+ }
+@@ -3689,7 +4541,14 @@ function docCss(c1, c2) {
+     'td{border:1px solid #E5E7EB;padding:7px 9px;vertical-align:top}' +
+     'p.meta{font-size:12px;color:#6B7280;font-weight:600;margin:0 0 8px}' +
+     '.doc-footer{max-width:820px;margin:24px auto 0;padding:14px 40px 30px;border-top:1px solid #E5E7EB;font-size:11px;color:#6B7280}' +
+-    '@media print{.doc-meta .draft{color:#b45309}}';
++    '.page-break{page-break-before:always;break-before:page;display:block;height:0;margin:0;padding:0}' +
++    '.doc-toc{background:#F5F5F7;border:1px solid #E5E7EB;border-radius:8px;padding:20px 28px;margin:18px 0 24px}' +
++    '.doc-toc-title{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px;font-weight:700;color:' + c1 + ';margin:0 0 12px;border-bottom:2px solid #E5E7EB;padding-bottom:8px}' +
++    '.doc-toc ol{margin:0 0 0 18px;padding:0;counter-reset:toc-counter}' +
++    '.doc-toc li{margin:5px 0;font-size:13px}' +
++    '.doc-toc a{color:' + c1 + ';text-decoration:none;font-weight:600}' +
++    '.doc-toc a:hover{text-decoration:underline}' +
++    '@media print{.page-break{page-break-before:always;break-before:page}.doc-meta .draft{color:#b45309}}';
+ }
+ 
+ // ── Build verbatim response text for prompts ───────────────────────────────────
+@@ -3715,7 +4574,9 @@ function generateDeliverable(key) {
+   // While a generation is in flight, this same button acts as Stop (aborts the call).
+   if (delivAbort[key]) { delivAbort[key].abort(); return; }
+   var project = getDelivProject();
++  if (key === 'facilitatorMaster') return genFacilitatorMaster(project);
+   if (key === 'leaderNav') return genLeaderNav(project);
++  if (key === 'individual') return genIndividual(project);
+   if (key === 'summary')   return genSummary(project);
+   if (key === 'runOfShow') return genWorkshop(project, 'runOfShow');
+   if (key === 'deck')      return genWorkshop(project, 'deck');
+@@ -3730,15 +4591,15 @@ function genLeaderNav(project) {
+   if (!lastReport) { dStatus('leaderNav','Run or open an analysis first.','err'); return; }
+   var leaderName = (project && project.seniorLeaderName) || '';
+   var leaderTitle = (project && project.seniorLeaderTitle) || '';
+-  var prompt = 'You are creating a confidential Leader Navigation Plan for ' +
+-    (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior leader') +
++  var prompt = 'You are creating a confidential Senior Leader Navigation Plan (Tier 1) for ' +
++    (leaderName ? (leaderName + (leaderTitle ? ', ' + leaderTitle : '')) : 'the senior-most client leader') +
+     (project && project.clientName ? ' at ' + project.clientName : '') + '.\n' +
+-    'Audience: this leader and the Cardwell engagement lead only. Purpose: help the leader shape their own development plan to lead the strategy successfully.\n' +
+-    'Base everything ONLY on the survey analysis JSON below. Do not invent facts.\n' +
++    'Audience: this senior leader (the CEO or department head) and the Cardwell engagement lead only. It is the private pre-session debrief, so it carries facilitator-level depth WITH names. Purpose: help the leader walk into the workshop knowing where the team truly stands and how to lead building the OnePage.\n' +
++    'Base everything ONLY on the survey analysis JSON below, which is organized by the five Cardwell OnePage components (corePurpose, pinnacle, strategicPriorities, operatingModel with sub-elements, scorecard) plus crossCutting signals (ownership, risk, changeReadiness). Do not invent facts. Quote respondents verbatim and attribute by name where useful.\n' +
+     'Identify:\n' +
+-    '- LANDMINES: hidden risks and tensions from the team feedback (divergence, watch items, standout concerns) that could derail the strategy if the leader does not address them. For each: what it is, why it is dangerous, and what the leader should do.\n' +
+-    '- GUIDEPOSTS: sources of strength and alignment (convergence, takeaways) that will help the leader drive clarity and execution. For each: what it is and how to use it.\n' +
+-    '- A short development focus section: 3 to 5 reflective prompts and focus areas for the leader\'s own growth based on the feedback.\n' +
++    '- LANDMINES: hidden risks and tensions across the components (divergent threads, especially any flagged contradictsConvergence; fractured or partial statuses; risk and change-readiness signals; gaps and silences; outlier standouts) that could derail the strategy if the leader does not address them. For each: what it is, which component it sits in, why it is dangerous, and what the leader should do.\n' +
++    '- GUIDEPOSTS: sources of strength (aligned components, convergent threads, generative standouts, component takeaways) the leader can build the OnePage on. For each: what it is, which component, and how to use it.\n' +
++    '- A short development focus section: 3 to 5 reflective prompts for the leader\'s own growth, drawn from the feedback.\n' +
+     'Tone: direct, supportive, executive. ' + NO_DASH + '\n' +
+     'Return ONLY an HTML fragment (no html, head, or body tags) using ONLY these tags and classes: ' +
+     '<p class="lead"> for the opening addressed to the leader; <h2> for section titles (use "Landmines to navigate", "Guideposts to lean on", "Shaping your development plan"); ' +
+@@ -3749,7 +4610,7 @@ function genLeaderNav(project) {
+   var c = new AbortController(); delivAbort.leaderNav = c; renderDelivCards();
+   anthropicComplete(prompt, 4500, c.signal).then(function(text){
+     var body = stripFrag(text);
+-    generatedDocs.leaderNav = { type:'html', html: brandedDocHtml(project, { title:'Leader Navigation Plan', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'LeaderNavigationPlan') };
++    generatedDocs.leaderNav = { type:'docx', html: brandedDocHtml(project, { title:'Senior Leader Navigation Plan', audience:'Client sponsor', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SeniorLeaderNavigationPlan') };
+     delete delivAbort.leaderNav;
+     persistWorkspace(); saveDeliverableToShared('leaderNav'); renderDelivCards();
+     dStatus('leaderNav','✓ Generated. Preview, then download.','ok');
+@@ -3761,21 +4622,24 @@ function genLeaderNav(project) {
+ }
+ 
+ function genSummary(project) {
+-  var list = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses
+-    : (project ? allResponses.filter(function(r){ return projKeyOf(r) === project.slug; }) : allResponses.slice());
+-  if (!list.length) { dStatus('summary','No responses available. Run an analysis or pick a project with responses.','err'); return; }
+-  var prompt = 'You are creating a Summary of Findings for ' + (project && project.clientName ? project.clientName : 'the client') +
++  if (!lastReport) { dStatus('summary','Run or open an analysis first.','err'); return; }
++  var prompt = 'You are creating the Anonymized Themes (Tier 3) in-room artifact for ' + (project && project.clientName ? project.clientName : 'the client') +
+     (project && project.projectName ? ' (' + project.projectName + ')' : '') + '.\n' +
+-    'This reports the team\'s survey input as facts, organized into Convergence, Divergence, and Standout points.\n' +
+-    'CRITICAL: Do NOT interpret, summarize, paraphrase, rank, or editorialize. Use ONLY exact verbatim quotes from the responses below, each attributed to the respondent name. Cluster the quotes under the three headings. Do not add analysis sentences. The facilitators will discuss the honest truths live.\n' +
++    'Audience: shared live in the room with the whole group. It MUST be fully anonymized.\n' +
++    'CRITICAL ANONYMIZATION RULES:\n' +
++    '- Do NOT include any respondent names, initials, roles, or any detail that identifies who said what.\n' +
++    '- Do NOT include attributable verbatim quotes. You may reflect the group\'s shared language, but never tie words to an individual.\n' +
++    '- Report themes across the group only.\n' +
++    'Work from the analysis JSON below, which is organized by the five Cardwell OnePage components plus cross-cutting signals. For each component that has content, report the convergent themes, the divergent themes (the competing framings, stated plainly and without names), and any standout themes (described generically, never as "one leader named X").\n' +
++    'GROUNDING (critical): Use ONLY themes that are present in the analysis JSON. Do NOT invent, infer, embellish, or add anything not in the JSON. This report is shared with the same leaders who will also receive their Individual reports and whose senior leader receives the Senior Leader report drawn from this same analysis, so it must not state anything those reports would contradict. If a component is thin or absent in the JSON, say so plainly rather than filling the gap.\n' +
++    'This artifact is for the responding leaders to read; it must stand on its own without a facilitator present. Do NOT include facilitator notes, worksheets, or blank note boxes.\n' +
+     NO_DASH + '\n' +
+-    'Return ONLY an HTML fragment using ONLY: <h2> for the three headings exactly "Convergence", "Divergence", "Standout perspectives"; optional <h3> for a short theme label that is itself drawn from the respondents\' own words; <blockquote> for one verbatim quote; <p class="attr"> for the attribution (the respondent name) under each quote; and <div class="worksheet"><h3>Facilitator notes</h3></div> at the end of each of the three sections for live discussion.\n' +
+-    'Then a final section: <h2>Talking with your team</h2> with one <p> of plain, general best practice guidance on how the leader receiving this report should talk with their employees about the strategy (guidance only, not interpretation of the data), then <div class="worksheet"><h3>My plan</h3><ul><li>What I will say</li><li>What I will ask</li><li>What I will commit to</li><li>How I will follow up</li></ul></div>.\n\n' +
+-    'VERBATIM RESPONSES:\n' + responsesVerbatimText(list);
++    'Return ONLY an HTML fragment using ONLY: <h2> for each OnePage component label that has content (Core Purpose, Pinnacle, Strategic Priorities, Operating Model, Scorecard) and for "Cross-Cutting Signals"; under each, <h3>Convergent</h3>, <h3>Divergent</h3>, <h3>Standout</h3> as needed with <ul><li> theme items (no names, no attributable quotes). Do NOT add any facilitator-notes or worksheet blocks.\n\n' +
++    'ANALYSIS JSON (anonymize everything; never output a name; never go beyond it):\n' + JSON.stringify(lastReport.data);
+   var c = new AbortController(); delivAbort.summary = c; renderDelivCards();
+   anthropicComplete(prompt, 7000, c.signal).then(function(text){
+     var body = stripFrag(text);
+-    generatedDocs.summary = { type:'html', html: brandedDocHtml(project, { title:'Summary of Findings', audience:'Client-facing', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'SummaryOfFindings') };
++    generatedDocs.summary = { type:'docx', html: brandedDocHtml(project, { title:'Anonymized Themes', audience:'In-room', brand:'client', bodyHtml: body }), fileBase: fileBaseFor(project,'AnonymizedThemes') };
+     delete delivAbort.summary;
+     persistWorkspace(); saveDeliverableToShared('summary'); renderDelivCards();
+     dStatus('summary','✓ Generated. Preview, then download.','ok');
+@@ -3795,6 +4659,7 @@ function genWorkshop(project, which) {
+   }
+   var prompt = 'You are preparing two linked deliverables for a multi-day strategy workshop for ' +
+     (project.clientName || 'the client') + (project.projectName ? ' (' + project.projectName + ')' : '') + '. There are ' + n + ' facilitator(s).\n' +
++    'The workshop\'s job is to build the team\'s Cardwell OnePage: Core Purpose, Pinnacle, three to four Strategic Priorities, the Operating Model (core customer, products and services, channels, value proposition, capacity and funding), and a Scorecard. Where you reference strategy structure, use these OnePage component names, not the C1 to C4 survey categories (the 4Cs are only the survey instrument).\n' +
+     'The uploaded workshop document defines the days, dates, times, objectives, and outcomes. Use that content VERBATIM. Do not change, add, or remove any day, date, time, objective, or outcome.\n' +
+     'Produce:\n' +
+     '1) A facilitator RUN OF SHOW (audience: Cardwell facilitation team only). For each day or session in the document, lay out a timed sequence of recommended activities that will drive the stated objectives and outcomes. For each activity include: a time block, what happens, the purpose tied to a stated outcome, the facilitator assignment for ' + n + ' facilitator(s) (who LEADS and what the other facilitator(s) do at that time), and a reference to the supporting slide number(s) from the deck you design.\n' +
+@@ -3808,7 +4673,7 @@ function genWorkshop(project, which) {
+   anthropicComplete(prompt, 8000, c.signal).then(function(text){
+     var data = parseJsonLoose(text);
+     if (!data || !data.runOfShowHtml || !data.slides) throw new Error('Model did not return the expected Run of Show and slides. Try again.');
+-    generatedDocs.runOfShow = { type:'html', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
++    generatedDocs.runOfShow = { type:'docx', html: brandedDocHtml(project, { title:'Workshop Run of Show', audience:'Internal', brand:'cardwell', bodyHtml: data.runOfShowHtml }), fileBase: fileBaseFor(project,'RunOfShow') };
+     generatedDocs.deck = { type:'deck', slides: data.slides, project: project, fileBase: fileBaseFor(project,'WorkshopDeck') };
+     generatedDocs._workshopSlug = project.slug;
+     delete delivAbort.runOfShow; delete delivAbort.deck;
+@@ -3828,6 +4693,189 @@ function stripFrag(t) {
+   return (t || '').trim().replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+ }
+ 
++// Tier 0: Facilitator master (.docx). Full depth, names, status, sentiment, gaps,
++// advisor comments. Built client-side from the on-screen analysis; no model call.
++function genFacilitatorMaster(project) {
++  if (!lastReport) { dStatus('facilitatorMaster','Run or open an analysis first.','err'); return; }
++  var doc, opts = null;
++  if (isOnePageSchema(lastReport.data)) {
++    doc = buildFacilitatorMasterHtml(lastReport, project);   // dense landscape table layout
++    opts = { orientation: 'landscape', margins: { top: 720, right: 720, bottom: 720, left: 720 } };
++  } else {
++    // legacy analyses: keep the portrait depth doc
++    doc = brandedDocHtml(project, { title:'Facilitator Master', audience:'Internal', brand:'cardwell',
++      bodyHtml: '<p class="meta">Confidential. Cardwell facilitators only.</p>' + buildLeaderFindingsBody(lastReport) });
++  }
++  generatedDocs.facilitatorMaster = { type:'docx', html: doc, fileBase: fileBaseFor(project, 'FacilitatorMaster'), docxOpts: opts };
++  persistWorkspace(); renderDelivCards();
++  dStatus('facilitatorMaster','✓ Generated (landscape .docx). Preview, then download.','ok');
++}
++
++// Tier 0 dense layout: landscape, small font, tables, blank facilitator-notes rows.
++// Built to put as much of the analysis in front of the facilitators as possible.
++function buildFacilitatorMasterHtml(report, project) {
++  var d = report.data || {}, m = report.meta || {};
++  var c1 = '#00007b', c2 = '#0b1747'; // internal Cardwell navy regardless of client brand
++  function statusInline(st){ var s = STATUS[st] || STATUS.absent; return '<span style="display:inline-block;font-size:9px;font-weight:700;color:#fff;background:' + s.hex + ';padding:1px 6px;border-radius:10px">' + s.marker + ' ' + esc(s.label) + '</span>'; }
++  function evTxt(ev){ return (ev && ev.length) ? ' <span class="ev">[' + ev.map(function(e){ return (e.who ? esc(e.who) + ' ' : '') + '“' + esc(e.quote || e.point || '') + '”'; }).join('; ') + ']</span>' : ''; }
++  function li(x){ var who = fWho(x), b = ''; if (x && typeof x === 'object'){ if (x.type === 'generative') b = ' (generative)'; else if (x.type === 'outlier') b = ' (outlier)'; if (x.contradictsConvergence === true) b += ' (contradicts)'; } return '<li>' + (who ? '<strong>' + esc(who) + ':</strong> ' : '') + esc(fPoint(x)) + b + evTxt(fEvidence(x)) + '</li>'; }
++  function findList(arr){ return (arr && arr.length) ? '<ul>' + arr.map(li).join('') + '</ul>' : '<span class="none">none</span>'; }
++  function rowKV(label, content){ return '<tr><th>' + esc(label) + '</th><td>' + content + '</td></tr>'; }
++  function notesRow(){ return '<tr><th>Facilitator notes</th><td class="notes">&nbsp;<br>&nbsp;<br>&nbsp;</td></tr>'; }
++  function compTable(comp){
++    var r = rowKV('Status', statusInline(comp.status));
++    if ((comp.convergent || []).length) r += rowKV('Convergent', findList(comp.convergent));
++    if ((comp.divergent || []).length) r += rowKV('Divergent', findList(comp.divergent));
++    if ((comp.standout || []).length) r += rowKV('Standout', findList(comp.standout));
++    if (comp.sentiment) r += rowKV('Sentiment (inference)', esc(comp.sentiment.read || '') + ((comp.sentiment.signals || []).length ? ' · signals: ' + esc((comp.sentiment.signals || []).join(', ')) : '') + '. ' + esc(comp.sentiment.flag || ''));
++    if ((comp.gaps || []).length) r += rowKV('Gaps & silences', findList(comp.gaps));
++    if (comp.takeaway) r += rowKV('First move', esc(comp.takeaway));
++    if (comp.advisorComment) r += rowKV('Advisor comment', esc(comp.advisorComment));
++    r += notesRow();
++    return '<table class="ct">' + r + '</table>';
++  }
++  function subTable(sub){
++    var r = rowKV('Status', statusInline(sub.status));
++    if ((sub.convergent || []).length) r += rowKV('Convergent', findList(sub.convergent));
++    if ((sub.divergent || []).length) r += rowKV('Divergent', findList(sub.divergent));
++    if ((sub.standout || []).length) r += rowKV('Standout', findList(sub.standout));
++    if ((sub.gaps || []).length) r += rowKV('Gaps', findList(sub.gaps));
++    return '<table class="ct">' + r + '</table>';
++  }
++  var h = '';
++  var dash = (d.overall && d.overall.dashboard && d.overall.dashboard.length) ? d.overall.dashboard : deriveDashboard(d);
++  h += '<h2>Status dashboard</h2><table class="dash"><tr>' + dash.map(function(rw){ return '<th>' + esc(onepageLabel(rw.component)) + '</th>'; }).join('') + '</tr><tr>' + dash.map(function(rw){ return '<td>' + statusInline(rw.status) + '</td>'; }).join('') + '</tr></table>';
++  if (d.executiveSummary) h += '<h2>Executive summary</h2><p>' + esc(d.executiveSummary) + '</p>';
++  ONEPAGE_COMPONENTS.forEach(function(cd){
++    var comp = componentByKey(d, cd.key) || emptyComponentBlock(cd.key, cd.label);
++    h += '<h2>' + esc(cd.label) + ' ' + statusInline(comp.status) + '</h2>' + compTable(comp);
++    if (cd.key === 'operatingModel') {
++      h += '<h3>Operating Model sub-elements</h3>';
++      OPERATING_MODEL_SUB.forEach(function(sb){ var b = (d.operatingModelSub || {})[sb.key] || emptySubBlock(); h += '<h4>' + esc(sb.label) + ' ' + statusInline(b.status) + '</h4>' + subTable(b); });
++    }
++  });
++  h += '<h2>Cross-cutting signals</h2><table class="ct">';
++  CROSSCUTTING.forEach(function(cd){
++    var b = (d.crossCutting || {})[cd.key] || { status:'absent', findings:[], feeds:cd.feeds };
++    h += '<tr><th>' + esc(cd.label) + ' ' + statusInline(b.status) + '</th><td>' + findList(b.findings) + '<div class="feeds">Feeds: ' + ((b.feeds || cd.feeds || []).map(esc).join(', ') || 'n/a') + '</div></td></tr>';
++  });
++  h += '<tr><th>Facilitator notes</th><td class="notes">&nbsp;<br>&nbsp;</td></tr></table>';
++  h += '<h2>Scorecard candidates</h2><table class="sc"><tr>' + SCORECARD_CATEGORIES.map(function(cat){ return '<th>' + esc(cat.label) + '</th>'; }).join('') + '</tr><tr>' +
++    SCORECARD_CATEGORIES.map(function(cat){ var items = (d.scorecardCandidates || {})[cat.key] || []; return '<td>' + (items.length ? '<ul>' + items.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '<span class="none">none</span>') + '</td>'; }).join('') + '</tr></table>';
++  if (d.overall) {
++    h += '<h2>Overall roll-up</h2><table class="ct">';
++    if ((d.overall.strongestConvergence || []).length) h += rowKV('Strongest convergence', findList(d.overall.strongestConvergence));
++    if ((d.overall.biggestDivergence || []).length) h += rowKV('Biggest divergence', findList(d.overall.biggestDivergence));
++    if ((d.overall.watchItems || []).length) h += rowKV('Watch items', findList(d.overall.watchItems));
++    h += '</table>';
++  }
++  if (d.nowWhat) {
++    var nw = d.nowWhat;
++    h += '<h2>Now what</h2><table class="ct">';
++    if (nw.outcome) h += rowKV('Outcome', esc(nw.outcome));
++    if ((nw.mindsetShifts || []).length) h += rowKV('Mindset shifts', '<ul>' + nw.mindsetShifts.map(function(p){ return '<li>' + esc(p.from || '') + ' &rarr; ' + esc(p.to || '') + '</li>'; }).join('') + '</ul>');
++    if ((nw.behaviorShifts || []).length) h += rowKV('Behavior shifts', '<ul>' + nw.behaviorShifts.map(function(p){ return '<li>' + esc(p.from || '') + ' &rarr; ' + esc(p.to || '') + '</li>'; }).join('') + '</ul>');
++    if ((nw.cultureGap || []).length) h += rowKV('Culture gap', '<ul>' + nw.cultureGap.map(function(r){ return '<li><strong>' + esc(r.dimension || '') + ':</strong> ' + esc(r.consider || '') + '</li>'; }).join('') + '</ul>');
++    h += '</table>';
++  }
++  var meta = (m.respondents && m.respondents.length ? m.respondents.length + ' respondents: ' + esc(m.respondents.join(', ')) : '') + ' · Generated ' + esc(fmtDateFull(m.when || new Date())) + (m.model ? ' · ' + esc(m.model) : '');
++  var css = 'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#1f2937;margin:0}' +
++    '@page{size:landscape;margin:0.5in}' +
++    '.band{background:' + c2 + ';color:#fff;padding:10px 14px}.band h1{margin:0;font-size:16pt}.band .sub{font-size:8.5pt;color:#cdd6f5}' +
++    '.wrap{padding:10px 14px}' +
++    'h2{font-size:11pt;color:' + c1 + ';margin:12px 0 4px;border-bottom:1px solid #d7def5;padding-bottom:2px}' +
++    'h3{font-size:9.5pt;margin:8px 0 3px;color:#0b1747}h4{font-size:9pt;margin:6px 0 2px;color:#0b1747}' +
++    'table{width:100%;border-collapse:collapse;margin:2px 0 6px;table-layout:fixed}' +
++    'th,td{border:1px solid #c9d2e6;padding:3px 6px;vertical-align:top;text-align:left;word-wrap:break-word}' +
++    '.ct th{width:135px;background:#eef2ff;color:#0b1747;font-size:9pt}' +
++    '.dash th{background:' + c1 + ';color:#fff;font-size:8pt}.dash td{text-align:center}' +
++    '.sc th{background:' + c1 + ';color:#fff;font-size:8.5pt;width:25%}' +
++    'ul{margin:0;padding-left:15px}li{margin:1px 0}' +
++    '.ev{color:#6b7280;font-style:italic;font-size:8.5pt}.none{color:#9ca3af}.feeds{color:#6b7280;font-size:8.5pt;margin-top:3px}' +
++    '.notes{height:46px}p{margin:2px 0 6px}';
++  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Facilitator Master</title><style>' + css + '</style></head><body>' +
++    '<div class="band"><h1>Facilitator Master</h1><div class="sub">' + esc((project && project.projectName) || 'The Cardwell Way') + (project && project.clientName ? ' · ' + esc(project.clientName) : '') + ' · Cardwell facilitators only · ' + meta + '</div></div>' +
++    '<div class="wrap">' + h + '</div></body></html>';
++}
++
++// Map each survey question to the OnePage component (or cross-cutting signal) it primarily feeds.
++var Q_PRIMARY_COMPONENT = {
++  q1:'corePurpose', q2:'operatingModel', q3:'pinnacle', q4:'operatingModel',
++  q5:'strategicPriorities', q6:'strategicPriorities', q7:'strategicPriorities',
++  q8:'operatingModel', q9:'ownership', q10:'risk', q11:'scorecard', q12:'changeReadiness'
++};
++function qMetaById(){ var map={}; SECTIONS.forEach(function(s){ s.questions.forEach(function(q){ map[q.id]=q; }); }); return map; }
++
++// Tier 2: Individual report (.docx). One leader's verbatim answers, organized by the
++// OnePage component each feeds, plus any advisor comments on their input. No model call.
++function genIndividual(project) {
++  var sel = document.getElementById('indiv-resp');
++  var rowId = sel ? parseInt(sel.value, 10) : 0;
++  if (!rowId) { dStatus('individual','Pick a respondent from the dropdown first.','err'); return; }
++  var r = allResponses.filter(function(x){ return x.rowId === rowId; })[0];
++  if (!r) { dStatus('individual','Could not find that respondent. Refresh responses and try again.','err'); return; }
++  var name = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || 'Respondent';
++  dStatus('individual','Building…','');
++  // Pull this person's advisor comments (per-question), then assemble.
++  fetch(ENDPOINT_URL + '?action=getComments&respKey=' + encodeURIComponent(respKey(r)) + '&rowId=' + encodeURIComponent(rowId) + '&token=' + encodeURIComponent(projToken()))
++    .then(function(res){ return res.json(); })
++    .then(function(j){ return (j && j.comments) || {}; })
++    .catch(function(){ return {}; })
++    .then(function(comments){
++      var qm = qMetaById();
++      // Group order: five components, then the three cross-cutting signals.
++      var groups = ONEPAGE_COMPONENTS.map(function(c){ return { key:c.key, label:c.label }; })
++        .concat(CROSSCUTTING.map(function(c){ return { key:c.key, label:c.label }; }));
++      var body = '<p class="lead">This is your own survey input, organized by the OnePage component each answer most directly informs. Your client team sees only anonymized themes; this report is yours.</p>';
++      groups.forEach(function(g){
++        var qids = Object.keys(Q_PRIMARY_COMPONENT).filter(function(qid){ return Q_PRIMARY_COMPONENT[qid] === g.key; });
++        if (!qids.length) return;
++        var inner = '';
++        qids.forEach(function(qid){
++          var q = qm[qid]; if (!q) return;
++          var ans = (r[qid] || '').trim() || '(no answer)';
++          inner += '<p><strong>' + esc(q.num) + '. ' + esc(q.text) + '</strong></p>';
++          inner += '<blockquote>' + esc(ans) + '</blockquote>';
++          if (comments[qid]) inner += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comments[qid]) + '</p></div>';
++        });
++        if (inner) body += '<h2>' + esc(g.label) + '</h2>' + inner;
++      });
++      var doc = brandedDocHtml(project, { title:'Individual Report: ' + name, audience:'That leader', brand: project ? 'client' : 'cardwell', bodyHtml: body });
++      generatedDocs.individual = { type:'docx', html: doc, fileBase: fileBaseFor(project, 'IndividualReport_' + slugify(name)) };
++      persistWorkspace(); renderDelivCards();
++      dStatus('individual','✓ Generated for ' + name + '. Preview, then download (.docx).','ok');
++    });
++}
++
++// The exact responses used in the current analysis, scoped to the selected
++// Deliverables project. Falls back to name-matching for a reopened saved analysis.
++function analysisRespList() {
++  if (!lastReport) return [];
++  var proj = getDelivProject();
++  var names = {};
++  (lastReport.meta && lastReport.meta.respondents || []).forEach(function(n){ names[String(n).trim()] = true; });
++  var base = (lastAnalysisResponses && lastAnalysisResponses.length) ? lastAnalysisResponses : allResponses;
++  var seen = {}, out = [];
++  base.forEach(function(r){
++    var nm = (r.fullName || ((r.first||'') + ' ' + (r.last||''))).trim();
++    if (!names[nm]) return;                                   // only respondents in this analysis
++    if (proj && projKeyOf(r) !== proj.slug) return;           // only in the selected project
++    if (seen[r.rowId]) return; seen[r.rowId] = true;
++    out.push(r);
++  });
++  return out;
++}
++
++// Respondent options for the Individual report dropdown.
++function indivRespOptions() {
++  var list = analysisRespList();
++  if (!list.length) return '<option value="">No respondents (load an analysis and pick its project above)</option>';
++  return '<option value="">Choose a respondent…</option>' + list.map(function(r){
++    var nm = r.fullName || ((r.first||'') + ' ' + (r.last||'')) || ('Respondent ' + r.rowId);
++    return '<option value="' + r.rowId + '">' + esc(nm) + '</option>';
++  }).join('');
++}
++
+ // ── Preview + download ─────────────────────────────────────────────────────────
+ function previewDeliverable(key) {
+   var g = generatedDocs[key]; if (!g) return;
+@@ -3837,7 +4885,7 @@ function previewDeliverable(key) {
+   document.getElementById('preview-sub').textContent = d.fmt;
+   var body = document.getElementById('preview-body');
+   body.innerHTML = '';
+-  if (g.type === 'html') {
++  if (g.type === 'html' || g.type === 'docx') {
+     var ifr = document.createElement('iframe');
+     ifr.style.cssText = 'width:100%;height:72vh;border:none;background:#fff;display:block';
+     ifr.srcdoc = g.html;
+@@ -3862,6 +4910,7 @@ function downloadCurrentDeliverable(){ if (currentPreviewKey) downloadDeliverabl
+ 
+ function downloadDeliverable(key) {
+   var g = generatedDocs[key]; if (!g) return;
++  if (g.type === 'docx') { downloadDocxFromHtml(g.html, g.fileBase, g.docxOpts); return; }
+   if (g.type === 'html') {
+     var w = window.open('', '_blank');
+     if (!w) { // popup blocked: fall back to .html download
+@@ -4370,7 +5419,119 @@ function lpStatus(msg, cls) {
+ }
+ 
+ // Build the leader-facing analysis findings body (self-contained, branded shell adds the styling).
++// Dispatcher: new component schema renders the OnePage leader body; legacy renders C1-C4.
+ function buildLeaderFindingsBody(report) {
++  if (report && report.data && isOnePageSchema(report.data)) return buildLeaderFindingsBodyOnePage(report);
++  return buildLeaderFindingsBodyLegacy(report);
++}
++
++// Self-contained inline badges/quotes for the leader doc (brandedDocHtml supplies base CSS).
++function lpEvHtml(ev){ return (ev && ev.length) ? ev.map(function(q){
++  return '<blockquote>' + (q.who ? '<strong>' + esc(q.who) + ': </strong>' : '') + esc(q.quote || q.point || '') + '</blockquote>';
++}).join('') : ''; }
++function lpBadge(text, bg, fg){
++  return '<span style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;padding:1px 7px;border-radius:20px;margin-left:6px;background:' + bg + ';color:' + fg + '">' + esc(text) + '</span>';
++}
++function lpStatusBadge(status){
++  var st = STATUS[status] || STATUS.absent;
++  return '<span style="display:inline-block;font-size:11px;font-weight:700;color:#fff;background:' + st.hex + ';padding:2px 9px;border-radius:20px;margin-left:8px;vertical-align:middle">' + st.marker + ' ' + esc(st.label) + '</span>';
++}
++function lpFindingLi(x){
++  var who = fWho(x), badge = '';
++  if (x && typeof x === 'object') {
++    if (x.type === 'generative') badge += lpBadge('generative', '#E6F4EC', '#1A7F4B');
++    else if (x.type === 'outlier') badge += lpBadge('outlier', '#FEF3C7', '#92400E');
++    if (x.contradictsConvergence === true) badge += lpBadge('contradicts convergence', '#F7ECE7', '#C0392B');
++  }
++  return '<li>' + (who ? '<strong>' + esc(who) + ': </strong>' : '') + esc(fPoint(x)) + badge + lpEvHtml(fEvidence(x)) + '</li>';
++}
++function lpSentimentHtml(sent){
++  if (!sent) return '';
++  var signals = (sent.signals || []).map(esc).join(', ');
++  return '<p class="meta"><strong>Sentiment (inference):</strong> ' + esc(sent.read || 'neutral') +
++    (signals ? ' · signals: ' + signals : '') + '. ' + esc(sent.flag || 'Facilitator to probe, validate, and verify in the room.') + '</p>';
++}
++function lpGapsHtml(gaps){
++  if (!gaps || !gaps.length) return '';
++  return '<h3>Gaps and silences</h3><ul>' + gaps.map(function(g){ return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>';
++}
++
++// New OnePage component layout for the Senior Leader (Tier 1) doc and the leader portal.
++function buildLeaderFindingsBodyOnePage(report){
++  var d = report.data || {}, m = report.meta || {};
++  var h = '';
++  h += '<p class="meta">' + (m.respondents && m.respondents.length ? m.respondents.length + ' respondents · ' : '') +
++       'Generated ' + esc(fmtDateFull(m.when || new Date())) + (m.model ? ' · ' + esc(m.model) : '') + '</p>';
++  if (d.executiveSummary) h += '<h2>Executive Summary</h2><p class="lead">' + esc(d.executiveSummary) + '</p>';
++
++  function compBlock(label, comp, isSub){
++    var head = isSub ? 'h3' : 'h2';
++    var s = '<' + head + '>' + esc(label) + lpStatusBadge(comp.status) + '</' + head + '>';
++    if ((comp.convergent || []).length) s += '<div class="callout guidepost"><h3>Convergent</h3><ul>' + comp.convergent.map(lpFindingLi).join('') + '</ul></div>';
++    if ((comp.divergent || []).length) s += '<div class="callout landmine"><h3>Divergent</h3><ul>' + comp.divergent.map(lpFindingLi).join('') + '</ul></div>';
++    if ((comp.standout || []).length) s += '<h3>Standout</h3><ul>' + comp.standout.map(lpFindingLi).join('') + '</ul>';
++    if (comp.sentiment) s += lpSentimentHtml(comp.sentiment);
++    s += lpGapsHtml(comp.gaps);
++    if (comp.takeaway) s += '<p><strong>Facilitator takeaway (first move):</strong> ' + esc(comp.takeaway) + '</p>';
++    if (comp.advisorComment) s += '<div class="callout"><h3>Advisor comment</h3><p>' + esc(comp.advisorComment) + '</p></div>';
++    return s;
++  }
++
++  ONEPAGE_COMPONENTS.forEach(function(cdef){
++    var comp = componentByKey(d, cdef.key) || emptyComponentBlock(cdef.key, cdef.label);
++    h += compBlock(cdef.label, comp, false);
++    if (cdef.key === 'operatingModel') {
++      OPERATING_MODEL_SUB.forEach(function(sub){
++        var b = (d.operatingModelSub || {})[sub.key] || emptySubBlock();
++        h += compBlock(sub.label, b, true);
++      });
++    }
++  });
++
++  // Cross-cutting
++  h += '<h2>Cross-Cutting Signals</h2>';
++  CROSSCUTTING.forEach(function(cdef){
++    var b = (d.crossCutting || {})[cdef.key] || { status: 'absent', findings: [], feeds: cdef.feeds };
++    h += '<h3>' + esc(cdef.label) + lpStatusBadge(b.status) + '</h3>';
++    if ((b.findings || []).length) h += '<ul>' + b.findings.map(lpFindingLi).join('') + '</ul>';
++    h += '<p class="meta">Feeds: ' + ((b.feeds || cdef.feeds || []).map(esc).join(', ') || 'n/a') + '</p>';
++  });
++
++  // Scorecard candidates
++  h += '<h2>Scorecard Candidates</h2>';
++  SCORECARD_CATEGORIES.forEach(function(cat){
++    var items = (d.scorecardCandidates || {})[cat.key] || [];
++    h += '<h3>' + esc(cat.label) + '</h3>' + (items.length ? '<ul>' + items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' : '<p>None captured yet.</p>');
++  });
++
++  // Overall roll-up
++  if (d.overall) {
++    var o = d.overall;
++    h += '<h2>Overall Roll-Up</h2>';
++    if ((o.strongestConvergence || []).length) h += '<div class="callout guidepost"><h3>Strongest Convergence</h3><ul>' + o.strongestConvergence.map(lpFindingLi).join('') + '</ul></div>';
++    if ((o.biggestDivergence || []).length) h += '<div class="callout landmine"><h3>Biggest Divergence</h3><ul>' + o.biggestDivergence.map(lpFindingLi).join('') + '</ul></div>';
++    if ((o.watchItems || []).length) h += '<h3>Watch Items</h3><ul>' + o.watchItems.map(lpFindingLi).join('') + '</ul>';
++  }
++
++  // Now What
++  if (d.nowWhat) {
++    var nw = d.nowWhat;
++    h += '<h2>Now What</h2>';
++    if (nw.outcome) h += '<p class="lead"><strong>The outcome we are driving:</strong> ' + esc(nw.outcome) + '</p>';
++    if (nw.mindsetShifts && nw.mindsetShifts.length) h += '<h3>The mindset shifts this requires</h3>' + lpShiftTable(nw.mindsetShifts);
++    if (nw.behaviorShifts && nw.behaviorShifts.length) h += '<h3>The behavior shifts this requires</h3>' + lpShiftTable(nw.behaviorShifts);
++    if (nw.cultureGap && nw.cultureGap.length) {
++      h += '<h3>The culture gap: what to think about for execution</h3>';
++      h += '<p>Prompts to work through together, not verdicts.</p>';
++      h += '<table><thead><tr><th>Dimension</th><th>What to think about for execution</th><th>Where we land / first step</th></tr></thead><tbody>' +
++        nw.cultureGap.map(function(r){ return '<tr><td>' + esc(r.dimension || '') + '</td><td>' + esc(r.consider || '') + '</td><td></td></tr>'; }).join('') +
++        '</tbody></table>';
++    }
++  }
++  return h;
++}
++
++function buildLeaderFindingsBodyLegacy(report) {
+   var d = report.data || {}, m = report.meta || {};
+   // Leader-facing: render point + attribution + verbatim evidence quotes (always visible for print).
+   var lpEv = function(ev){ return (ev && ev.length) ? ev.map(function(q){
