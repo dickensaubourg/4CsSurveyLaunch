@@ -241,13 +241,33 @@ body {
   margin-bottom: 20px;
 }
 .op-group-header {
-  background: #0b1747;
-  border-radius: 10px 10px 0 0;
+  background: var(--brand-dark);
+  border-radius: 10px; /* full radius when collapsed */
   padding: 12px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: border-radius 0s .25s; /* delay matches body open */
 }
+.op-group.is-open .op-group-header {
+  border-radius: 10px 10px 0 0;
+  transition: border-radius 0s;
+}
+.op-group-header:hover { filter: brightness(1.1); }
+.op-group-chevron {
+  color: rgba(255,255,255,.55);
+  font-size: 13px;
+  transition: transform .25s ease;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.op-group.is-open .op-group-chevron { transform: rotate(180deg); }
+.op-group-body {
+  display: none; /* collapsed by default */
+}
+.op-group.is-open .op-group-body { display: block; }
 .op-group-label {
   font-size: 9px;
   font-weight: 700;
@@ -933,9 +953,11 @@ function renderPage(record) {
   });
 
   GROUPED_SECTIONS.forEach(function(group){
-    html += '<div class="op-group">';
-    html += '<div class="op-group-header">';
+    var gid = 'grp-' + group.cards[0].key;
+    html += '<div class="op-group" id="' + gid + '">';
+    html += '<div class="op-group-header" onclick="toggleGroup(' + q(gid) + ')">';
     html += '<div><div class="op-group-label">Section</div><div class="op-group-title">' + esc(group.groupLabel) + '</div></div>';
+    html += '<span class="op-group-chevron">&#9660;</span>';
     html += '</div>';
     html += '<div class="op-group-body"><div class="op-cards-grid">';
     group.cards.forEach(function(card){
@@ -1222,6 +1244,11 @@ document.getElementById('name-last').addEventListener('keydown', function(e){
 });
 
 // ── Utilities ──────────────────────────────────────────────────────────────
+function toggleGroup(id) {
+  var grp = document.getElementById(id);
+  if (grp) grp.classList.toggle('is-open');
+}
+
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

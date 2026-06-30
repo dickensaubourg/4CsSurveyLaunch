@@ -6871,14 +6871,6 @@ function opMoveSPTile(tile, dir) {
 }
 
 function opDeleteSPTile(tile) {
-  var list = tile.parentElement;
-  var tiles = list.querySelectorAll('.op-sp-tile');
-  if (tiles.length <= 1) {
-    // Last tile: clear instead of remove
-    tile.querySelector('.op-sp-tile-title').value = '';
-    tile.querySelector('.op-sp-tile-body').value = '';
-    return;
-  }
   tile.remove();
   opUpdateSPState();
 }
