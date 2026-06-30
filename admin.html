@@ -1471,6 +1471,10 @@
   min-height: 64px;
   font-size: 13px;
 }
+.op-sp-cmt-btn {
+  margin-left: auto; /* push to the right of the title input */
+  flex-shrink: 0;
+}
 .op-sp-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; background: none; border: 1.5px dashed #b8c0d8;
@@ -2469,8 +2473,6 @@
         <div class="op-flat-section">
           <div class="op-flat-section-header">
             <div class="op-flat-section-title">Strategic Priorities</div>
-            <button class="op-cmt-btn" id="opcmtbtn-strategicPriorities"
-              onclick="opOpenTray('strategicPriorities','Strategic Priorities')">Comments</button>
           </div>
           <div class="op-flat-section-body">
             <div id="op-sp-list"></div>
@@ -6809,7 +6811,7 @@ function opApplyLockState() {
   if (spList) {
     spList.querySelectorAll('input').forEach(function(el){ el.readOnly = opIsLocked; });
     spList.querySelectorAll('.op-sp-tile-body').forEach(function(el){ el.contentEditable = opIsLocked ? 'false' : 'true'; });
-    spList.querySelectorAll('button').forEach(function(el){ el.disabled = opIsLocked; });
+    spList.querySelectorAll('button:not(.op-sp-cmt-btn)').forEach(function(el){ el.disabled = opIsLocked; });
   }
   var spAddBtn = document.getElementById('op-sp-add-btn');
   if (spAddBtn) spAddBtn.disabled = opIsLocked;
@@ -6876,8 +6878,15 @@ function opBuildSPTile(list, item) {
   controls.appendChild(upBtn);
   controls.appendChild(downBtn);
   controls.appendChild(delBtn);
+  var cmtBtn = document.createElement('button');
+  cmtBtn.className = 'op-cmt-btn op-sp-cmt-btn';
+  cmtBtn.type = 'button';
+  cmtBtn.textContent = 'Comments';
+  // id and onclick assigned by opUpdateSPState after append
+
   header.appendChild(num);
   header.appendChild(titleInput);
+  header.appendChild(cmtBtn);
   header.appendChild(controls);
 
   var bodyTA = document.createElement('div');
@@ -6931,7 +6940,22 @@ function opUpdateSPState() {
     var btns = tile.querySelectorAll('.op-sp-tile-btn');
     if (btns[0]) btns[0].disabled = (i === 0);
     if (btns[1]) btns[1].disabled = (i === count - 1);
+    // Keep comment button ID + onclick in sync with current position
+    var cmtBtn = tile.querySelector('.op-sp-cmt-btn');
+    if (cmtBtn) {
+      var key = 'strategicPriorities_' + i;
+      cmtBtn.id = 'opcmtbtn-' + key;
+      cmtBtn.onclick = (function(t, k, idx) {
+        return function() {
+          var titleEl = t.querySelector('.op-sp-tile-title');
+          var label = 'Priority ' + (idx + 1) + (titleEl && titleEl.value ? ': ' + titleEl.value : '');
+          opOpenTray(k, label);
+        };
+      })(tile, key, i);
+    }
   });
+  // Refresh comment counts so newly-positioned buttons show correct badges
+  opUpdateAllCommentBtns();
 }
 
 function opGetSPData() {
@@ -7206,12 +7230,24 @@ function opLoadCommentCounts() {
 }
 
 function opUpdateAllCommentBtns() {
+  // Fixed section keys
   OP_SECTION_KEYS.forEach(function(key){
+    if (key === 'strategicPriorities') return; // replaced by per-tile buttons
     var btn = document.getElementById('opcmtbtn-' + key);
     if (!btn) return;
     var cnt = opAllComments.filter(function(c){ return c.sectionKey === key; }).length;
     btn.textContent = cnt > 0 ? 'Comments (' + cnt + ')' : 'Comments';
     btn.className   = cnt > 0 ? 'op-cmt-btn has-comments' : 'op-cmt-btn';
+  });
+  // Per-priority comment buttons
+  var spList = document.getElementById('op-sp-list');
+  if (!spList) return;
+  spList.querySelectorAll('.op-sp-cmt-btn').forEach(function(btn) {
+    var key = btn.id.replace('opcmtbtn-', '');
+    if (!key) return;
+    var cnt = opAllComments.filter(function(c){ return c.sectionKey === key; }).length;
+    btn.textContent = cnt > 0 ? 'Comments (' + cnt + ')' : 'Comments';
+    btn.className   = cnt > 0 ? 'op-cmt-btn op-sp-cmt-btn has-comments' : 'op-cmt-btn op-sp-cmt-btn';
   });
 }
 
