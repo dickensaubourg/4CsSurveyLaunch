@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/leader", "destination": "/leader.html" },
     { "source": "/leader/(.*)", "destination": "/leader.html" },
+    { "source": "/onepage/(.*)", "destination": "/onepage.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
