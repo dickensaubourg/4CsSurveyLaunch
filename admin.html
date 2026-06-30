@@ -1513,6 +1513,9 @@
 }
 .op-rich-editor:focus { border-color: #254deb; }
 .op-rich-editor[contenteditable="false"] { background: #f9fafb; color: #6b7280; cursor: default; }
+/* Lists inside editors */
+.op-rich-editor ul, .op-rich-editor ol { margin: 4px 0; padding-left: 20px; }
+.op-rich-editor li { margin: 2px 0; }
 /* Placeholder via CSS */
 .op-rich-editor:empty::before {
   content: attr(data-placeholder);
@@ -2407,11 +2410,13 @@
 
         <!-- Rich text toolbar (shared, sticky) -->
         <div class="op-rich-toolbar" id="op-rich-toolbar">
-          <button class="op-rtb-btn" id="rtb-bold" title="Bold" onmousedown="event.preventDefault();opFormat('bold')"><strong>B</strong></button>
-          <button class="op-rtb-btn" id="rtb-italic" title="Italic" onmousedown="event.preventDefault();opFormat('italic')"><em>I</em></button>
-          <button class="op-rtb-btn" id="rtb-underline" title="Underline" onmousedown="event.preventDefault();opFormat('underline')"><u>U</u></button>
+          <button class="op-rtb-btn" id="rtb-bold" title="Bold" onmousedown="opToolbarAction(event,'bold')"><strong>B</strong></button>
+          <button class="op-rtb-btn" id="rtb-italic" title="Italic" onmousedown="opToolbarAction(event,'italic')"><em>I</em></button>
+          <button class="op-rtb-btn" id="rtb-underline" title="Underline" onmousedown="opToolbarAction(event,'underline')"><u>U</u></button>
           <div class="op-rtb-sep"></div>
-          <span style="font-size:11px;color:#6b7280;line-height:1.4;">Click a field below, then format selected text.</span>
+          <button class="op-rtb-btn" id="rtb-bullet" title="Bullet list" onmousedown="opToolbarAction(event,'insertUnorderedList')" style="font-size:15px;letter-spacing:-1px;">&#8226;&#8212;</button>
+          <div class="op-rtb-sep"></div>
+          <span style="font-size:11px;color:#6b7280;line-height:1.4;">Select text, then click to format.</span>
         </div>
 
         <!-- OnePage header preview: Cardwell navy card with meta fields -->
@@ -6671,6 +6676,8 @@ var opIsLocked         = false;
 var opTraySection      = null;
 var opAllComments      = [];
 var opEditingCommentId = null;
+var _opActiveEditor    = null;   // currently-focused rich editor
+var _opSavedRange      = null;   // saved selection before toolbar click
 
 // Entry
 
@@ -6878,18 +6885,7 @@ function opBuildSPTile(list, item) {
   bodyTA.contentEditable = 'true';
   bodyTA.setAttribute('data-placeholder', 'Describe this priority. Include trade-offs and what we stop or reduce.');
   bodyTA.innerHTML = opSanitizeHtml(item.body || '');
-  // Wire rich editor events for this dynamically-created editor
-  bodyTA.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
-  });
-  bodyTA.addEventListener('paste', function(e) {
-    e.preventDefault();
-    var text = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, text);
-  });
-  bodyTA.addEventListener('keyup', opUpdateToolbarState);
-  bodyTA.addEventListener('mouseup', opUpdateToolbarState);
-  bodyTA.addEventListener('focus', opUpdateToolbarState);
+  opWireEditor(bodyTA); // wire keyboard/selection/paste handlers
 
   tile.appendChild(header);
   tile.appendChild(bodyTA);
@@ -6966,21 +6962,22 @@ function opSanitizeHtml(html) {
     var result = '';
     node.childNodes.forEach(function(child) {
       if (child.nodeType === 3) {
-        // Text node: escape it
         result += child.textContent
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       } else if (child.nodeType === 1) {
         var tag = child.tagName.toLowerCase();
-        var safe = { strong:1, b:1, em:1, i:1, u:1, br:1 };
         if (tag === 'br') {
           result += '<br>';
-        } else if (safe[tag]) {
+        } else if (/^(strong|b|em|i|u)$/.test(tag)) {
           result += '<' + tag + '>' + clean(child) + '</' + tag + '>';
+        } else if (/^(ul|ol)$/.test(tag)) {
+          result += '<' + tag + '>' + clean(child) + '</' + tag + '>';
+        } else if (tag === 'li') {
+          result += '<li>' + clean(child) + '</li>';
         } else {
-          // Strip the tag but keep inner content (div/p/span etc. from paste)
+          // Strip unknown tags but keep inner content
           var inner = clean(child);
-          // If this was a block-level tag and has content, add a <br> to preserve spacing
-          var block = { div:1, p:1, li:1, tr:1, td:1, h1:1, h2:1, h3:1, blockquote:1 };
+          var block = { div:1, p:1, tr:1, td:1, h1:1, h2:1, h3:1, blockquote:1 };
           if (block[tag] && inner) result += inner + '<br>';
           else result += inner;
         }
@@ -6994,54 +6991,101 @@ function opSanitizeHtml(html) {
   return out;
 }
 
-// Apply bold/italic/underline to current selection
-function opFormat(cmd) {
+// Save the current selection + which editor has focus
+function opSaveSelection(editor) {
+  _opActiveEditor = editor;
+  var sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    _opSavedRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+// Restore saved selection into the active editor, then run execCommand
+function opToolbarAction(event, cmd) {
+  event.preventDefault(); // don't steal focus from editor
+  if (_opActiveEditor) {
+    _opActiveEditor.focus();
+    if (_opSavedRange) {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(_opSavedRange);
+    }
+  }
   document.execCommand(cmd, false, null);
+  // Re-save after format so next action continues from correct position
+  var s = window.getSelection();
+  if (s && s.rangeCount) _opSavedRange = s.getRangeAt(0).cloneRange();
   opUpdateToolbarState();
 }
 
-// Update B/I/U button active state based on selection
+// Update B/I/U/bullet button active state based on current selection
 function opUpdateToolbarState() {
-  ['bold','italic','underline'].forEach(function(cmd) {
-    var btn = document.getElementById('rtb-' + cmd);
+  var cmds = { bold:'bold', italic:'italic', underline:'underline', bullet:'insertUnorderedList' };
+  Object.keys(cmds).forEach(function(id) {
+    var btn = document.getElementById('rtb-' + id);
     if (!btn) return;
     try {
-      if (document.queryCommandState(cmd)) btn.classList.add('active');
+      if (document.queryCommandState(cmds[id])) btn.classList.add('active');
       else btn.classList.remove('active');
     } catch(e) {}
   });
 }
 
 var _opRichEditorsInited = false;
-// Wire up all rich editors: Enter key inserts <br>, paste strips HTML
+// Wire up a rich editor element with all keyboard/selection handling
+function opWireEditor(el) {
+  if (el.dataset.rtbWired) return;
+  el.dataset.rtbWired = '1';
+
+  // Track focus + save selection
+  el.addEventListener('focus', function() {
+    _opActiveEditor = el;
+    opUpdateToolbarState();
+  });
+  el.addEventListener('mouseup', function() {
+    opSaveSelection(el);
+    opUpdateToolbarState();
+  });
+  el.addEventListener('keyup', function() {
+    opSaveSelection(el);
+    opUpdateToolbarState();
+  });
+
+  // Enter: insert <br> UNLESS inside a list item (let browser handle that naturally)
+  el.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    // Check if cursor is inside a <li>
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      var node = sel.getRangeAt(0).startContainer;
+      var n = (node.nodeType === 3) ? node.parentNode : node;
+      while (n && n !== el) {
+        if (n.nodeName === 'LI') return; // let browser create next <li>
+        n = n.parentNode;
+      }
+    }
+    // Not in a list: insert <br> instead of <div>
+    e.preventDefault();
+    document.execCommand('insertLineBreak');
+  });
+
+  // Paste: plain text only
+  el.addEventListener('paste', function(e) {
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
+}
+
+// Wire all static rich editors; called once when builder tab opens
 function opInitRichEditors() {
   document.querySelectorAll('.op-rich-editor').forEach(function(el) {
-    if (el.dataset.rtbWired) return; // already wired
-    el.dataset.rtbWired = '1';
-    // Enter key: insert <br> instead of <div>
-    el.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.execCommand('insertLineBreak');
-      }
-    });
-    // Paste: strip to plain text
-    el.addEventListener('paste', function(e) {
-      e.preventDefault();
-      var text = (e.clipboardData || window.clipboardData).getData('text/plain');
-      document.execCommand('insertText', false, text);
-    });
-    // Update toolbar state on selection change
-    el.addEventListener('keyup', opUpdateToolbarState);
-    el.addEventListener('mouseup', opUpdateToolbarState);
-    el.addEventListener('focus', opUpdateToolbarState);
+    opWireEditor(el);
   });
-  // selectionchange delegation (only once)
   if (!_opRichEditorsInited) {
     _opRichEditorsInited = true;
     document.addEventListener('selectionchange', function() {
-      var active = document.activeElement;
-      if (active && active.classList.contains('op-rich-editor')) {
+      if (document.activeElement && document.activeElement.classList.contains('op-rich-editor')) {
         opUpdateToolbarState();
       }
     });
