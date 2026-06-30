@@ -221,6 +221,11 @@ body {
   border-left: 3px solid var(--brand);
   padding: 8px 0 8px 14px;
 }
+.op-sp-priority-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 4px;
+}
+.op-sp-priority-header .op-cmt-btn { flex-shrink: 0; }
 .op-sp-priority-title {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 17px;
@@ -917,7 +922,10 @@ function renderPage(record) {
     html += '<div class="op-flat-section">';
     html += '<div class="op-flat-header">';
     html += '<div class="op-flat-title">' + esc(s.label) + '</div>';
-    html += '<button class="op-cmt-btn" id="cmtbtn-' + s.key + '" onclick="openTray(' + q(s.key) + ',' + q(s.label) + ')">Comments</button>';
+    // Section-level comment button for everything except SP (SP gets per-priority buttons)
+    if (s.key !== 'strategicPriorities') {
+      html += '<button class="op-cmt-btn" id="cmtbtn-' + s.key + '" onclick="openTray(' + q(s.key) + ',' + q(s.label) + ')">Comments</button>';
+    }
     html += '</div>';
     html += '<div class="op-flat-body">';
 
@@ -933,10 +941,17 @@ function renderPage(record) {
       if (spItems.length) {
         html += '<div class="op-sp-priorities">';
         spItems.forEach(function(item, i) {
+          var spKey   = 'strategicPriorities_' + i;
+          var spLabel = 'Priority ' + (i + 1) + (item.title ? ': ' + item.title : '');
           html += '<div class="op-sp-priority">';
+          html += '<div class="op-sp-priority-header">';
           if (item.title) {
             html += '<div class="op-sp-priority-title">' + esc(item.title) + '</div>';
+          } else {
+            html += '<div class="op-sp-priority-title" style="color:#9ca3af">Priority ' + (i+1) + '</div>';
           }
+          html += '<button class="op-cmt-btn" id="cmtbtn-' + spKey + '" onclick="openTray(' + q(spKey) + ',' + q(spLabel) + ')">Comments</button>';
+          html += '</div>';
           if (item.body) {
             html += '<div class="op-sp-priority-body">' + safeHtml(item.body) + '</div>';
           }
@@ -1006,11 +1021,20 @@ function loadComments() {
 }
 
 function updateAllCmtBtns() {
-  var allKeys = FLAT_SECTIONS.map(function(s){ return s.key; });
+  // Fixed section keys (SP excluded — it uses per-priority buttons below)
+  var allKeys = FLAT_SECTIONS.map(function(s){ return s.key; })
+    .filter(function(k){ return k !== 'strategicPriorities'; });
   GROUPED_SECTIONS.forEach(function(g){ g.cards.forEach(function(c){ allKeys.push(c.key); }); });
   allKeys.forEach(function(key){
     var btn = document.getElementById('cmtbtn-' + key);
     if (!btn) return;
+    var cnt = allComments.filter(function(c){ return c.sectionKey === key; }).length;
+    btn.textContent = cnt > 0 ? 'Comments (' + cnt + ')' : 'Comments';
+    btn.className = cnt > 0 ? 'op-cmt-btn has-comments' : 'op-cmt-btn';
+  });
+  // Per-priority buttons: strategicPriorities_0, _1, ...
+  document.querySelectorAll('[id^="cmtbtn-strategicPriorities_"]').forEach(function(btn) {
+    var key = btn.id.replace('cmtbtn-', '');
     var cnt = allComments.filter(function(c){ return c.sectionKey === key; }).length;
     btn.textContent = cnt > 0 ? 'Comments (' + cnt + ')' : 'Comments';
     btn.className = cnt > 0 ? 'op-cmt-btn has-comments' : 'op-cmt-btn';
