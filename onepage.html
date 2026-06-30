@@ -10,6 +10,12 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --brand:      #254deb;
+  --brand-dark: #0b1747;
+  --brand-dim:  #00007b;
+}
+
 body {
   font-family: 'Inter', Arial, Helvetica, sans-serif;
   background: #f5f5f7;
@@ -31,7 +37,7 @@ body {
 .spinner {
   width: 36px; height: 36px;
   border: 3px solid #e5e7eb;
-  border-top-color: #254deb;
+  border-top-color: var(--brand);
   border-radius: 50%;
   animation: spin .75s linear infinite;
 }
@@ -60,7 +66,7 @@ body {
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 .op-page-header {
-  background: linear-gradient(135deg, #0b1747 65%, #00007b 100%);
+  background: linear-gradient(135deg, var(--brand-dark) 65%, var(--brand-dim) 100%);
   position: relative;
   overflow: hidden;
   padding: 40px 0 32px;
@@ -71,7 +77,7 @@ body {
   top: 0; right: 0;
   width: 42%;
   height: 100%;
-  background: rgba(37, 77, 235, .18);
+  background: rgba(255,255,255,.08);
   clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
   pointer-events: none;
 }
@@ -80,11 +86,28 @@ body {
   margin: 0 auto;
   padding: 0 28px;
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.op-header-content { flex: 1; min-width: 0; }
+.op-header-logo-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+.op-header-logo {
+  max-height: 56px;
+  max-width: 160px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
 }
 .op-header-eyebrow {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: .14em;
   color: rgba(255,255,255,.5);
   margin-bottom: 8px;
@@ -165,7 +188,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px 12px;
-  border-bottom: 2px solid #254deb;
+  border-bottom: 2px solid var(--brand);
   background: #f9fafb;
 }
 .op-flat-title {
@@ -229,7 +252,7 @@ body {
 .op-card {
   background: #f9fafb;
   border: 1.5px solid #e5e7eb;
-  border-left: 3px solid #254deb;
+  border-left: 3px solid var(--brand);
   border-radius: 7px;
   padding: 14px 16px;
 }
@@ -274,9 +297,9 @@ body {
   font-family: 'Inter', Arial, sans-serif;
 }
 .op-cmt-btn:hover, .op-cmt-btn.has-comments {
-  border-color: #254deb;
+  border-color: var(--brand);
   background: #eff3ff;
-  color: #254deb;
+  color: var(--brand);
 }
 
 /* ── Comment tray ──────────────────────────────────────────────────────── */
@@ -383,7 +406,7 @@ body {
 .op-bubble.cardwell-resp {
   background: #eff3ff;
   border-color: #c7d7fd;
-  border-left: 3px solid #254deb;
+  border-left: 3px solid var(--brand);
 }
 .op-bubble-author {
   font-size: 12px;
@@ -391,7 +414,7 @@ body {
   color: #0b1747;
   margin-bottom: 4px;
 }
-.op-bubble-author.cardwell { color: #254deb; }
+.op-bubble-author.cardwell { color: var(--brand); }
 .op-bubble-text {
   font-size: 13.5px;
   color: #374151;
@@ -432,7 +455,7 @@ body {
   box-sizing: border-box;
   resize: vertical;
 }
-.op-inline-edit textarea:focus { outline: none; border-color: #254deb; }
+.op-inline-edit textarea:focus { outline: none; border-color: var(--brand); }
 .op-inline-edit-row { display: flex; gap: 6px; margin-top: 5px; }
 
 .op-tray-compose {
@@ -462,7 +485,7 @@ body {
   box-sizing: border-box;
   transition: border-color .15s;
 }
-.op-tray-compose textarea:focus { outline: none; border-color: #254deb; }
+.op-tray-compose textarea:focus { outline: none; border-color: var(--brand); }
 .op-tray-compose-row {
   display: flex;
   gap: 8px;
@@ -471,7 +494,7 @@ body {
 }
 .op-post-btn {
   padding: 8px 18px;
-  background: #254deb;
+  background: var(--brand);
   color: #fff;
   border: none;
   border-radius: 7px;
@@ -546,12 +569,12 @@ body {
   font-family: 'Inter', Arial, sans-serif;
   transition: border-color .15s;
 }
-.op-name-field input:focus { outline: none; border-color: #254deb; }
+.op-name-field input:focus { outline: none; border-color: var(--brand); }
 .op-name-actions { display: flex; gap: 8px; }
 .op-name-submit {
   flex: 1;
   padding: 10px;
-  background: #254deb;
+  background: var(--brand);
   color: #fff;
   border: none;
   border-radius: 7px;
@@ -593,7 +616,7 @@ body {
   color: #0b1747;
   letter-spacing: .03em;
 }
-.op-footer-brand span { color: #254deb; }
+.op-footer-brand span { color: var(--brand); }
 .op-footer-note {
   font-size: 11px;
   color: #9ca3af;
@@ -626,24 +649,30 @@ body {
 <div id="page-main">
 
   <!-- Header -->
-  <header class="op-page-header">
+  <header class="op-page-header" id="op-page-header">
     <div class="op-header-inner">
-      <div class="op-header-eyebrow">Cardwell OnePage</div>
-      <div class="op-header-org" id="hdr-org">Organization</div>
-      <div id="hdr-finalized" class="op-finalized-badge" style="display:none">Finalized</div>
-      <div class="op-header-meta" id="hdr-meta">
-        <div class="op-header-meta-item" id="hdr-fy-wrap" style="display:none">
-          <div class="op-header-meta-label">Fiscal Year</div>
-          <div class="op-header-meta-value" id="hdr-fy"></div>
+      <div class="op-header-content">
+        <div class="op-header-eyebrow">OnePage&trade;</div>
+        <div class="op-header-org" id="hdr-org">Organization</div>
+        <div class="op-header-tagline" id="hdr-project" style="display:none"></div>
+        <div id="hdr-finalized" class="op-finalized-badge" style="display:none">Finalized</div>
+        <div class="op-header-meta" id="hdr-meta">
+          <div class="op-header-meta-item" id="hdr-fy-wrap" style="display:none">
+            <div class="op-header-meta-label">Fiscal Year</div>
+            <div class="op-header-meta-value" id="hdr-fy"></div>
+          </div>
+          <div class="op-header-meta-item" id="hdr-issued-wrap" style="display:none">
+            <div class="op-header-meta-label">Issued</div>
+            <div class="op-header-meta-value" id="hdr-issued"></div>
+          </div>
+          <div class="op-header-meta-item" id="hdr-pinnacle-wrap" style="display:none">
+            <div class="op-header-meta-label">Pinnacle Year</div>
+            <div class="op-header-meta-value" id="hdr-pinnacle"></div>
+          </div>
         </div>
-        <div class="op-header-meta-item" id="hdr-issued-wrap" style="display:none">
-          <div class="op-header-meta-label">Issued</div>
-          <div class="op-header-meta-value" id="hdr-issued"></div>
-        </div>
-        <div class="op-header-meta-item" id="hdr-pinnacle-wrap" style="display:none">
-          <div class="op-header-meta-label">Pinnacle Year</div>
-          <div class="op-header-meta-value" id="hdr-pinnacle"></div>
-        </div>
+      </div>
+      <div class="op-header-logo-wrap" id="hdr-logo-wrap" style="display:none">
+        <img class="op-header-logo" id="hdr-logo" src="" alt="" onerror="this.parentElement.style.display='none'">
       </div>
     </div>
   </header>
@@ -775,9 +804,44 @@ function showNotFound() {
 function renderPage(record) {
   var sections = record.sections || {};
 
-  // Header
-  document.title = (record.projectName || currentSlug) + ' OnePage';
-  document.getElementById('hdr-org').textContent = record.clientName || record.projectName || currentSlug;
+  // ── Brand colors ──────────────────────────────────────────────────────────
+  var c1 = (record.color1 || '').trim();
+  var c2 = (record.color2 || '').trim();
+  if (c1) {
+    document.documentElement.style.setProperty('--brand', c1);
+    document.documentElement.style.setProperty('--brand-dark', c1);
+    // Header gradient: dark shade of c1 → c2 (or c1 slightly dimmed)
+    var hdrBg = c2
+      ? 'linear-gradient(135deg, ' + c1 + ' 65%, ' + c2 + ' 100%)'
+      : 'linear-gradient(135deg, ' + c1 + ' 65%, ' + c1 + 'cc 100%)';
+    document.getElementById('op-page-header').style.background = hdrBg;
+  }
+  if (c2) {
+    document.documentElement.style.setProperty('--brand-dim', c2);
+  }
+
+  // ── Group headers (Operating Model, Scorecard) use --brand-dark ──────────
+  // Applied via CSS variable, so they update automatically.
+
+  // ── Header text ───────────────────────────────────────────────────────────
+  var orgName = record.clientName || currentSlug;
+  document.title = orgName + ' OnePage™';
+  document.getElementById('hdr-org').textContent = orgName;
+
+  if (record.projectName) {
+    var projEl = document.getElementById('hdr-project');
+    projEl.textContent = record.projectName;
+    projEl.style.display = '';
+  }
+
+  // ── Logo ──────────────────────────────────────────────────────────────────
+  if (record.logo) {
+    var logoImg  = document.getElementById('hdr-logo');
+    var logoWrap = document.getElementById('hdr-logo-wrap');
+    logoImg.src = record.logo;
+    logoImg.alt = orgName + ' logo';
+    logoWrap.style.display = '';
+  }
 
   if (record.finalized) {
     document.getElementById('hdr-finalized').style.display = '';
