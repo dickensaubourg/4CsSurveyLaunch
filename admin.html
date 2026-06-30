@@ -1442,6 +1442,52 @@
 .op-flat-section-body {
   padding: 14px 18px 16px;
 }
+/* ── Strategic Priority tiles ─────────────────────────────────── */
+.op-sp-tile {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #f8f9fc; border: 1.5px solid #e2e5f0;
+  border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;
+}
+.op-sp-tile-header { display: flex; align-items: center; gap: 8px; }
+.op-sp-tile-num {
+  font-size: 11px; font-weight: 700; color: #8892b0;
+  min-width: 18px; text-align: center; letter-spacing: .04em;
+}
+.op-sp-tile-title {
+  flex: 1; font-size: 13px; font-weight: 600;
+  border: 1.5px solid #dde1ee; border-radius: 5px;
+  padding: 5px 9px; background: #fff; color: #1a2340; outline: none;
+}
+.op-sp-tile-title:focus { border-color: #254deb; }
+.op-sp-tile-controls { display: flex; gap: 4px; flex-shrink: 0; }
+.op-sp-tile-btn {
+  background: none; border: 1.5px solid #dde1ee; border-radius: 5px;
+  padding: 3px 8px; cursor: pointer; font-size: 12px; color: #556;
+}
+.op-sp-tile-btn:hover:not(:disabled) { background: #eef0fb; border-color: #aab; }
+.op-sp-tile-btn.danger:hover:not(:disabled) { background: #fef2f2; border-color: #fca5a5; color: #c33; }
+.op-sp-tile-btn:disabled { opacity: .35; cursor: default; }
+.op-sp-tile-body {
+  width: 100%; box-sizing: border-box;
+  border: 1.5px solid #e5e7eb; border-radius: 6px;
+  padding: 8px 10px; font-size: 13px; resize: vertical; min-height: 64px;
+  background: #fff; color: #1a2340; outline: none;
+}
+.op-sp-tile-body:focus { border-color: #254deb; }
+.op-sp-add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; background: none; border: 1.5px dashed #b8c0d8;
+  border-radius: 7px; padding: 9px 0; cursor: pointer;
+  font-size: 13px; color: #667; margin-top: 2px;
+}
+.op-sp-add-btn:hover:not(:disabled) { background: #f0f2fb; border-color: #7b8cc4; }
+.op-sp-add-btn:disabled { opacity: .4; cursor: default; }
+.op-sp-warn {
+  font-size: 12px; color: #b45309; background: #fef3c7;
+  border: 1px solid #fcd34d; border-radius: 5px;
+  padding: 5px 10px; margin-top: 6px; display: none;
+}
+/* ── end SP tiles ─────────────────────────────────────────────── */
 .op-flat-section textarea {
   width: 100%;
   border: 1.5px solid #e5e7eb;
@@ -2389,8 +2435,9 @@
               onclick="opOpenTray('strategicPriorities','Strategic Priorities')">Comments</button>
           </div>
           <div class="op-flat-section-body">
-            <textarea id="opcontent-strategicPriorities" rows="5"
-              placeholder="3 to 4 concentration areas. Real trade-offs. At least one explicit stop."></textarea>
+            <div id="op-sp-list"></div>
+            <div class="op-sp-warn" id="op-sp-warn">5 priorities is the recommended maximum. Consider consolidating.</div>
+            <button class="op-sp-add-btn" id="op-sp-add-btn" onclick="opAddSPTile()">+ Add Priority</button>
           </div>
         </div>
 
@@ -6658,11 +6705,13 @@ function opPopulateBuilder(record) {
   opSetVal('op-issued-label',  meta.issuedLabel  || '');
   opSetVal('op-pinnacle-year', meta.pinnacleYear || '');
 
-  // Section content
+  // Section content (all except strategicPriorities which uses tiles)
   OP_SECTION_KEYS.forEach(function(key){
+    if (key === 'strategicPriorities') return;
     var ta = document.getElementById('opcontent-' + key);
     if (ta) ta.value = sections[key] || '';
   });
+  opRenderSPTiles(sections.strategicPriorities);
 
   // Lock state
   opIsLocked = !!(record && record.finalized);
@@ -6706,6 +6755,7 @@ function opApplyLockState() {
 
   // Freeze/unfreeze all textareas and meta inputs
   OP_SECTION_KEYS.forEach(function(key){
+    if (key === 'strategicPriorities') return; // handled separately below
     var ta = document.getElementById('opcontent-' + key);
     if (ta) ta.readOnly = opIsLocked;
   });
@@ -6713,7 +6763,155 @@ function opApplyLockState() {
     var el = document.getElementById(id);
     if (el) el.readOnly = opIsLocked;
   });
+  // Freeze/unfreeze SP tiles
+  var spList = document.getElementById('op-sp-list');
+  if (spList) {
+    spList.querySelectorAll('input, textarea').forEach(function(el){ el.readOnly = opIsLocked; });
+    spList.querySelectorAll('button').forEach(function(el){ el.disabled = opIsLocked; });
+  }
+  var spAddBtn = document.getElementById('op-sp-add-btn');
+  if (spAddBtn) spAddBtn.disabled = opIsLocked;
 }
+
+// ── Strategic Priorities tile functions ──────────────────────────────────────
+
+function opRenderSPTiles(data) {
+  var list = document.getElementById('op-sp-list');
+  if (!list) return;
+  list.innerHTML = '';
+  var items = [];
+  if (Array.isArray(data)) {
+    items = data.filter(function(x){ return x && (typeof x === 'object'); });
+  } else if (typeof data === 'string' && data.trim()) {
+    // Legacy: single string migrated to one tile
+    items = [{ title: '', body: data.trim() }];
+  }
+  if (!items.length) items = [{ title: '', body: '' }]; // always start with one
+  items.forEach(function(item) { opBuildSPTile(list, item); });
+  opUpdateSPState();
+}
+
+function opBuildSPTile(list, item) {
+  var tile = document.createElement('div');
+  tile.className = 'op-sp-tile';
+
+  var header = document.createElement('div');
+  header.className = 'op-sp-tile-header';
+
+  var num = document.createElement('span');
+  num.className = 'op-sp-tile-num';
+
+  var titleInput = document.createElement('input');
+  titleInput.className = 'op-sp-tile-title';
+  titleInput.type = 'text';
+  titleInput.placeholder = 'Priority title (e.g. Grow Revenue)';
+  titleInput.value = item.title || '';
+
+  var controls = document.createElement('div');
+  controls.className = 'op-sp-tile-controls';
+
+  var upBtn = document.createElement('button');
+  upBtn.className = 'op-sp-tile-btn';
+  upBtn.type = 'button';
+  upBtn.title = 'Move up';
+  upBtn.textContent = '↑';
+  upBtn.onclick = function(){ opMoveSPTile(tile, -1); };
+
+  var downBtn = document.createElement('button');
+  downBtn.className = 'op-sp-tile-btn';
+  downBtn.type = 'button';
+  downBtn.title = 'Move down';
+  downBtn.textContent = '↓';
+  downBtn.onclick = function(){ opMoveSPTile(tile, 1); };
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'op-sp-tile-btn danger';
+  delBtn.type = 'button';
+  delBtn.title = 'Remove priority';
+  delBtn.textContent = '✕';
+  delBtn.onclick = function(){ opDeleteSPTile(tile); };
+
+  controls.appendChild(upBtn);
+  controls.appendChild(downBtn);
+  controls.appendChild(delBtn);
+  header.appendChild(num);
+  header.appendChild(titleInput);
+  header.appendChild(controls);
+
+  var bodyTA = document.createElement('textarea');
+  bodyTA.className = 'op-sp-tile-body';
+  bodyTA.rows = 3;
+  bodyTA.placeholder = 'Describe this priority. Include trade-offs and what we stop or reduce.';
+  bodyTA.value = item.body || '';
+
+  tile.appendChild(header);
+  tile.appendChild(bodyTA);
+  list.appendChild(tile);
+}
+
+function opAddSPTile() {
+  var list = document.getElementById('op-sp-list');
+  if (!list) return;
+  opBuildSPTile(list, { title: '', body: '' });
+  opUpdateSPState();
+  var tiles = list.querySelectorAll('.op-sp-tile');
+  var last = tiles[tiles.length - 1];
+  if (last) last.querySelector('.op-sp-tile-title').focus();
+}
+
+function opMoveSPTile(tile, dir) {
+  var list = tile.parentElement;
+  var tiles = Array.from(list.querySelectorAll('.op-sp-tile'));
+  var idx = tiles.indexOf(tile);
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tiles.length) return;
+  if (dir === -1) list.insertBefore(tile, tiles[newIdx]);
+  else list.insertBefore(tiles[newIdx], tile);
+  opUpdateSPState();
+}
+
+function opDeleteSPTile(tile) {
+  var list = tile.parentElement;
+  var tiles = list.querySelectorAll('.op-sp-tile');
+  if (tiles.length <= 1) {
+    // Last tile: clear instead of remove
+    tile.querySelector('.op-sp-tile-title').value = '';
+    tile.querySelector('.op-sp-tile-body').value = '';
+    return;
+  }
+  tile.remove();
+  opUpdateSPState();
+}
+
+function opUpdateSPState() {
+  var list = document.getElementById('op-sp-list');
+  if (!list) return;
+  var tiles = Array.from(list.querySelectorAll('.op-sp-tile'));
+  var count = tiles.length;
+  var warn = document.getElementById('op-sp-warn');
+  if (warn) warn.style.display = count > 5 ? '' : 'none';
+  tiles.forEach(function(tile, i) {
+    var num = tile.querySelector('.op-sp-tile-num');
+    if (num) num.textContent = (i + 1) + '.';
+    var btns = tile.querySelectorAll('.op-sp-tile-btn');
+    if (btns[0]) btns[0].disabled = (i === 0);
+    if (btns[1]) btns[1].disabled = (i === count - 1);
+  });
+}
+
+function opGetSPData() {
+  var list = document.getElementById('op-sp-list');
+  if (!list) return [];
+  var result = [];
+  list.querySelectorAll('.op-sp-tile').forEach(function(tile) {
+    var title = (tile.querySelector('.op-sp-tile-title').value || '').trim();
+    var body  = (tile.querySelector('.op-sp-tile-body').value  || '').trim();
+    if (title || body) result.push({ title: title, body: body });
+  });
+  return result;
+}
+
+// ── end Strategic Priorities tile functions ──────────────────────────────────
 
 function opToggleLock() {
   if (!opCurrentSlug) return;
@@ -6758,6 +6956,10 @@ function opSave() {
 
   var sections = {};
   OP_SECTION_KEYS.forEach(function(key){
+    if (key === 'strategicPriorities') {
+      sections[key] = opGetSPData();
+      return;
+    }
     var ta = document.getElementById('opcontent-' + key);
     sections[key] = ta ? ta.value.trim() : '';
   });
