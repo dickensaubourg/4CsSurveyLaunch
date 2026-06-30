@@ -932,7 +932,7 @@ function renderPage(record) {
             html += '<div class="op-sp-priority-title">' + esc(item.title) + '</div>';
           }
           if (item.body) {
-            html += '<div class="op-sp-priority-body">' + esc(item.body) + '</div>';
+            html += '<div class="op-sp-priority-body">' + safeHtml(item.body) + '</div>';
           }
           html += '</div>';
         });
@@ -943,7 +943,7 @@ function renderPage(record) {
     } else {
       var val = (sections[s.key] || '').trim();
       if (val) {
-        html += esc(val);
+        html += safeHtml(val);
       } else {
         html += '<span class="op-flat-empty">Not yet completed.</span>';
       }
@@ -969,7 +969,7 @@ function renderPage(record) {
       html += '</div>';
       html += '<div class="op-card-body">';
       if (val) {
-        html += esc(val);
+        html += safeHtml(val);
       } else {
         html += '<span class="op-card-empty">Not yet completed.</span>';
       }
@@ -1251,6 +1251,33 @@ function toggleGroup(id) {
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Render stored rich-text HTML safely: allow only known safe inline tags.
+function safeHtml(html) {
+  if (!html) return '';
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  function clean(node) {
+    var out = '';
+    node.childNodes.forEach(function(child) {
+      if (child.nodeType === 3) {
+        out += esc(child.textContent);
+      } else if (child.nodeType === 1) {
+        var tag = child.tagName.toLowerCase();
+        if (tag === 'br') { out += '<br>'; }
+        else if (/^(strong|b|em|i|u)$/.test(tag)) {
+          out += '<' + tag + '>' + clean(child) + '</' + tag + '>';
+        } else {
+          var inner = clean(child);
+          if (/^(div|p|li|tr|td|h[1-6]|blockquote)$/.test(tag) && inner) out += inner + '<br>';
+          else out += inner;
+        }
+      }
+    });
+    return out;
+  }
+  return clean(tmp).replace(/(<br>)+$/, '');
 }
 function q(s) {
   return "'" + String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'";

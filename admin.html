@@ -1468,12 +1468,9 @@
 .op-sp-tile-btn.danger:hover:not(:disabled) { background: #fef2f2; border-color: #fca5a5; color: #c33; }
 .op-sp-tile-btn:disabled { opacity: .35; cursor: default; }
 .op-sp-tile-body {
-  width: 100%; box-sizing: border-box;
-  border: 1.5px solid #e5e7eb; border-radius: 6px;
-  padding: 8px 10px; font-size: 13px; resize: vertical; min-height: 64px;
-  background: #fff; color: #1a2340; outline: none;
+  min-height: 64px;
+  font-size: 13px;
 }
-.op-sp-tile-body:focus { border-color: #254deb; }
 .op-sp-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; background: none; border: 1.5px dashed #b8c0d8;
@@ -1488,6 +1485,40 @@
   padding: 5px 10px; margin-top: 6px; display: none;
 }
 /* ── end SP tiles ─────────────────────────────────────────────── */
+/* ── Rich text editor (replaces textareas) ──────────────────────────────── */
+.op-rich-toolbar {
+  display: flex; gap: 3px; align-items: center;
+  padding: 5px 10px; background: #f0f2fb;
+  border: 1.5px solid #c8cef0; border-radius: 8px;
+  position: sticky; top: 0; z-index: 10;
+  margin-bottom: 8px;
+}
+.op-rtb-btn {
+  background: none; border: 1.5px solid transparent;
+  border-radius: 4px; padding: 2px 8px; cursor: pointer;
+  font-size: 13px; color: #334; line-height: 1.4;
+  transition: background .1s, border-color .1s;
+}
+.op-rtb-btn:hover { background: #dde1f5; border-color: #b0b8e0; }
+.op-rtb-btn.active { background: #c8cff5; border-color: #8898e0; }
+.op-rtb-sep { width: 1px; height: 16px; background: #c8cef0; margin: 0 3px; }
+.op-rich-editor {
+  width: 100%; min-height: 80px; box-sizing: border-box;
+  border: 1.5px solid #e5e7eb; border-radius: 6px;
+  padding: 10px 12px; font-size: 14px;
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.6; color: #111827; background: #fff;
+  outline: none; white-space: pre-wrap; word-break: break-word;
+  overflow-y: auto; transition: border-color .15s;
+}
+.op-rich-editor:focus { border-color: #254deb; }
+.op-rich-editor[contenteditable="false"] { background: #f9fafb; color: #6b7280; cursor: default; }
+/* Placeholder via CSS */
+.op-rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af; pointer-events: none; display: block;
+}
+/* Flat sections */
 .op-flat-section textarea {
   width: 100%;
   border: 1.5px solid #e5e7eb;
@@ -1503,15 +1534,8 @@
   box-sizing: border-box;
   transition: border-color .15s;
 }
-.op-flat-section textarea:focus {
-  outline: none;
-  border-color: #254deb;
-}
-.op-flat-section textarea:read-only {
-  background: #f9fafb;
-  color: #6b7280;
-  cursor: default;
-}
+.op-flat-section textarea:focus { outline: none; border-color: #254deb; }
+.op-flat-section textarea:read-only { background: #f9fafb; color: #6b7280; cursor: default; }
 
 /* ── Sub-section cards (Operating Model, Scorecard) ────────────────────── */
 .op-cards-grid {
@@ -2381,6 +2405,15 @@
           <span id="op-save-status" class="op-save-status"></span>
         </div>
 
+        <!-- Rich text toolbar (shared, sticky) -->
+        <div class="op-rich-toolbar" id="op-rich-toolbar">
+          <button class="op-rtb-btn" id="rtb-bold" title="Bold" onmousedown="event.preventDefault();opFormat('bold')"><strong>B</strong></button>
+          <button class="op-rtb-btn" id="rtb-italic" title="Italic" onmousedown="event.preventDefault();opFormat('italic')"><em>I</em></button>
+          <button class="op-rtb-btn" id="rtb-underline" title="Underline" onmousedown="event.preventDefault();opFormat('underline')"><u>U</u></button>
+          <div class="op-rtb-sep"></div>
+          <span style="font-size:11px;color:#6b7280;line-height:1.4;">Click a field below, then format selected text.</span>
+        </div>
+
         <!-- OnePage header preview: Cardwell navy card with meta fields -->
         <div class="op-header-preview">
           <div class="op-header-preview-eyebrow">OnePage Preview Header</div>
@@ -2409,8 +2442,8 @@
               onclick="opOpenTray('corePurpose','Core Purpose')">Comments</button>
           </div>
           <div class="op-flat-section-body">
-            <textarea id="opcontent-corePurpose" rows="2"
-              placeholder="One outcome-based reason for being, ideally under 8 words. A yes/no guardrail."></textarea>
+            <div id="opcontent-corePurpose" class="op-rich-editor" contenteditable="true"
+              data-placeholder="One outcome-based reason for being, ideally under 8 words. A yes/no guardrail."></div>
           </div>
         </div>
 
@@ -2422,8 +2455,8 @@
               onclick="opOpenTray('pinnacle','Pinnacle')">Comments</button>
           </div>
           <div class="op-flat-section-body">
-            <textarea id="opcontent-pinnacle" rows="2"
-              placeholder="Measurable 24 to 36 month destination. A stretch with a finish line."></textarea>
+            <div id="opcontent-pinnacle" class="op-rich-editor" contenteditable="true"
+              data-placeholder="Measurable 24 to 36 month destination. A stretch with a finish line."></div>
           </div>
         </div>
 
@@ -2458,8 +2491,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-om_coreCustomer"
                     onclick="opOpenTray('om_coreCustomer','Operating Model: Core Customer')">Comments</button>
                 </div>
-                <textarea id="opcontent-om_coreCustomer"
-                  placeholder="Who is the primary customer?"></textarea>
+                <div id="opcontent-om_coreCustomer" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="Who is the primary customer?"></div>
               </div>
 
               <div class="op-card" id="opcard-om_productsServices">
@@ -2468,8 +2501,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-om_productsServices"
                     onclick="opOpenTray('om_productsServices','Operating Model: Products and Services')">Comments</button>
                 </div>
-                <textarea id="opcontent-om_productsServices"
-                  placeholder="What are the core offerings?"></textarea>
+                <div id="opcontent-om_productsServices" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="What are the core offerings?"></div>
               </div>
 
               <div class="op-card" id="opcard-om_channels">
@@ -2478,8 +2511,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-om_channels"
                     onclick="opOpenTray('om_channels','Operating Model: Channels')">Comments</button>
                 </div>
-                <textarea id="opcontent-om_channels"
-                  placeholder="How do we reach and serve the customer?"></textarea>
+                <div id="opcontent-om_channels" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="How do we reach and serve the customer?"></div>
               </div>
 
               <div class="op-card" id="opcard-om_valueProposition">
@@ -2488,8 +2521,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-om_valueProposition"
                     onclick="opOpenTray('om_valueProposition','Operating Model: Value Proposition')">Comments</button>
                 </div>
-                <textarea id="opcontent-om_valueProposition"
-                  placeholder="What unique value is delivered?"></textarea>
+                <div id="opcontent-om_valueProposition" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="What unique value is delivered?"></div>
               </div>
 
               <div class="op-card" id="opcard-om_capacityFunding">
@@ -2498,8 +2531,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-om_capacityFunding"
                     onclick="opOpenTray('om_capacityFunding','Operating Model: Capacity and Funding')">Comments</button>
                 </div>
-                <textarea id="opcontent-om_capacityFunding"
-                  placeholder="Resources and funding model that sustain the work."></textarea>
+                <div id="opcontent-om_capacityFunding" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="Resources and funding model that sustain the work."></div>
               </div>
 
             </div>
@@ -2523,8 +2556,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-sc_financial"
                     onclick="opOpenTray('sc_financial','Scorecard: Financial')">Comments</button>
                 </div>
-                <textarea id="opcontent-sc_financial"
-                  placeholder="Financial measures and targets."></textarea>
+                <div id="opcontent-sc_financial" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="Financial measures and targets."></div>
               </div>
 
               <div class="op-card" id="opcard-sc_people">
@@ -2533,8 +2566,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-sc_people"
                     onclick="opOpenTray('sc_people','Scorecard: People')">Comments</button>
                 </div>
-                <textarea id="opcontent-sc_people"
-                  placeholder="People and team measures."></textarea>
+                <div id="opcontent-sc_people" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="People and team measures."></div>
               </div>
 
               <div class="op-card" id="opcard-sc_productsServices">
@@ -2543,8 +2576,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-sc_productsServices"
                     onclick="opOpenTray('sc_productsServices','Scorecard: Products and Services')">Comments</button>
                 </div>
-                <textarea id="opcontent-sc_productsServices"
-                  placeholder="Product and service quality measures."></textarea>
+                <div id="opcontent-sc_productsServices" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="Product and service quality measures."></div>
               </div>
 
               <div class="op-card" id="opcard-sc_customerImpact">
@@ -2553,8 +2586,8 @@
                   <button class="op-cmt-btn" id="opcmtbtn-sc_customerImpact"
                     onclick="opOpenTray('sc_customerImpact','Scorecard: Customer and Impact')">Comments</button>
                 </div>
-                <textarea id="opcontent-sc_customerImpact"
-                  placeholder="Customer experience and impact measures."></textarea>
+                <div id="opcontent-sc_customerImpact" class="op-rich-editor" contenteditable="true"
+                  data-placeholder="Customer experience and impact measures."></div>
               </div>
 
             </div>
@@ -6642,6 +6675,7 @@ var opEditingCommentId = null;
 // Entry
 
 function enterOnePageBuilder() {
+  opInitRichEditors();
   fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
     .then(function(r){ return r.json(); })
     .then(function(j){
@@ -6708,8 +6742,8 @@ function opPopulateBuilder(record) {
   // Section content (all except strategicPriorities which uses tiles)
   OP_SECTION_KEYS.forEach(function(key){
     if (key === 'strategicPriorities') return;
-    var ta = document.getElementById('opcontent-' + key);
-    if (ta) ta.value = sections[key] || '';
+    var el = document.getElementById('opcontent-' + key);
+    if (el) el.innerHTML = opSanitizeHtml(sections[key] || '');
   });
   opRenderSPTiles(sections.strategicPriorities);
 
@@ -6753,11 +6787,11 @@ function opApplyLockState() {
     if (saveBtn)  saveBtn.disabled = false;
   }
 
-  // Freeze/unfreeze all textareas and meta inputs
+  // Freeze/unfreeze rich editors and meta inputs
   OP_SECTION_KEYS.forEach(function(key){
     if (key === 'strategicPriorities') return; // handled separately below
-    var ta = document.getElementById('opcontent-' + key);
-    if (ta) ta.readOnly = opIsLocked;
+    var el = document.getElementById('opcontent-' + key);
+    if (el) el.contentEditable = opIsLocked ? 'false' : 'true';
   });
   ['op-fiscal-year','op-issued-label','op-pinnacle-year'].forEach(function(id){
     var el = document.getElementById(id);
@@ -6766,7 +6800,8 @@ function opApplyLockState() {
   // Freeze/unfreeze SP tiles
   var spList = document.getElementById('op-sp-list');
   if (spList) {
-    spList.querySelectorAll('input, textarea').forEach(function(el){ el.readOnly = opIsLocked; });
+    spList.querySelectorAll('input').forEach(function(el){ el.readOnly = opIsLocked; });
+    spList.querySelectorAll('.op-sp-tile-body').forEach(function(el){ el.contentEditable = opIsLocked ? 'false' : 'true'; });
     spList.querySelectorAll('button').forEach(function(el){ el.disabled = opIsLocked; });
   }
   var spAddBtn = document.getElementById('op-sp-add-btn');
@@ -6838,11 +6873,23 @@ function opBuildSPTile(list, item) {
   header.appendChild(titleInput);
   header.appendChild(controls);
 
-  var bodyTA = document.createElement('textarea');
-  bodyTA.className = 'op-sp-tile-body';
-  bodyTA.rows = 3;
-  bodyTA.placeholder = 'Describe this priority. Include trade-offs and what we stop or reduce.';
-  bodyTA.value = item.body || '';
+  var bodyTA = document.createElement('div');
+  bodyTA.className = 'op-sp-tile-body op-rich-editor';
+  bodyTA.contentEditable = 'true';
+  bodyTA.setAttribute('data-placeholder', 'Describe this priority. Include trade-offs and what we stop or reduce.');
+  bodyTA.innerHTML = opSanitizeHtml(item.body || '');
+  // Wire rich editor events for this dynamically-created editor
+  bodyTA.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+  });
+  bodyTA.addEventListener('paste', function(e) {
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
+  bodyTA.addEventListener('keyup', opUpdateToolbarState);
+  bodyTA.addEventListener('mouseup', opUpdateToolbarState);
+  bodyTA.addEventListener('focus', opUpdateToolbarState);
 
   tile.appendChild(header);
   tile.appendChild(bodyTA);
@@ -6896,14 +6943,112 @@ function opGetSPData() {
   if (!list) return [];
   var result = [];
   list.querySelectorAll('.op-sp-tile').forEach(function(tile) {
-    var title = (tile.querySelector('.op-sp-tile-title').value || '').trim();
-    var body  = (tile.querySelector('.op-sp-tile-body').value  || '').trim();
+    var titleEl = tile.querySelector('.op-sp-tile-title');
+    var bodyEl  = tile.querySelector('.op-sp-tile-body');
+    var title = (titleEl ? titleEl.value : '').trim();
+    var body  = bodyEl ? opSanitizeHtml(bodyEl.innerHTML).trim() : '';
     if (title || body) result.push({ title: title, body: body });
   });
   return result;
 }
 
 // ── end Strategic Priorities tile functions ──────────────────────────────────
+
+// ── Rich text editor helpers ─────────────────────────────────────────────────
+
+// Sanitize HTML: keep only safe inline tags, strip everything else.
+function opSanitizeHtml(html) {
+  if (!html) return '';
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  // Walk all nodes; keep safe tags, strip others but keep their text children
+  function clean(node) {
+    var result = '';
+    node.childNodes.forEach(function(child) {
+      if (child.nodeType === 3) {
+        // Text node: escape it
+        result += child.textContent
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      } else if (child.nodeType === 1) {
+        var tag = child.tagName.toLowerCase();
+        var safe = { strong:1, b:1, em:1, i:1, u:1, br:1 };
+        if (tag === 'br') {
+          result += '<br>';
+        } else if (safe[tag]) {
+          result += '<' + tag + '>' + clean(child) + '</' + tag + '>';
+        } else {
+          // Strip the tag but keep inner content (div/p/span etc. from paste)
+          var inner = clean(child);
+          // If this was a block-level tag and has content, add a <br> to preserve spacing
+          var block = { div:1, p:1, li:1, tr:1, td:1, h1:1, h2:1, h3:1, blockquote:1 };
+          if (block[tag] && inner) result += inner + '<br>';
+          else result += inner;
+        }
+      }
+    });
+    return result;
+  }
+  var out = clean(tmp);
+  // Trim leading/trailing <br> tags
+  out = out.replace(/^(<br>)+|(<br>)+$/g, '');
+  return out;
+}
+
+// Apply bold/italic/underline to current selection
+function opFormat(cmd) {
+  document.execCommand(cmd, false, null);
+  opUpdateToolbarState();
+}
+
+// Update B/I/U button active state based on selection
+function opUpdateToolbarState() {
+  ['bold','italic','underline'].forEach(function(cmd) {
+    var btn = document.getElementById('rtb-' + cmd);
+    if (!btn) return;
+    try {
+      if (document.queryCommandState(cmd)) btn.classList.add('active');
+      else btn.classList.remove('active');
+    } catch(e) {}
+  });
+}
+
+var _opRichEditorsInited = false;
+// Wire up all rich editors: Enter key inserts <br>, paste strips HTML
+function opInitRichEditors() {
+  document.querySelectorAll('.op-rich-editor').forEach(function(el) {
+    if (el.dataset.rtbWired) return; // already wired
+    el.dataset.rtbWired = '1';
+    // Enter key: insert <br> instead of <div>
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.execCommand('insertLineBreak');
+      }
+    });
+    // Paste: strip to plain text
+    el.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+    // Update toolbar state on selection change
+    el.addEventListener('keyup', opUpdateToolbarState);
+    el.addEventListener('mouseup', opUpdateToolbarState);
+    el.addEventListener('focus', opUpdateToolbarState);
+  });
+  // selectionchange delegation (only once)
+  if (!_opRichEditorsInited) {
+    _opRichEditorsInited = true;
+    document.addEventListener('selectionchange', function() {
+      var active = document.activeElement;
+      if (active && active.classList.contains('op-rich-editor')) {
+        opUpdateToolbarState();
+      }
+    });
+  }
+}
+
+// ── end Rich text editor helpers ─────────────────────────────────────────────
 
 function opToggleLock() {
   if (!opCurrentSlug) return;
@@ -6952,8 +7097,8 @@ function opSave() {
       sections[key] = opGetSPData();
       return;
     }
-    var ta = document.getElementById('opcontent-' + key);
-    sections[key] = ta ? ta.value.trim() : '';
+    var el = document.getElementById('opcontent-' + key);
+    sections[key] = el ? opSanitizeHtml(el.innerHTML).trim() : '';
   });
 
   var payload = {
