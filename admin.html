@@ -1177,6 +1177,633 @@
   .proj-status.published { background: #ecfdf5; color: #047857; }
   .proj-status.draft { background: #fef3c7; color: #b45309; }
   .proj-row-actions { display: flex; gap: 4px; }
+
+/* ── OnePage Builder: Cardwell-branded admin view ───────────────────────── */
+
+/* Fonts (referenced if Google Fonts hasn't loaded yet via admin head) */
+#view-onepage, .op-tray {
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+/* ── Project selector panel ─────────────────────────────────────────────── */
+#view-onepage .op-project-panel {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+#view-onepage .op-project-panel label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+#view-onepage .op-project-panel select {
+  width: 100%;
+  max-width: 480px;
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #fff;
+  color: #111827;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color .15s;
+}
+#view-onepage .op-project-panel select:focus {
+  outline: none;
+  border-color: #254deb;
+}
+
+/* ── OnePage header preview (top of builder) ────────────────────────────── */
+.op-header-preview {
+  background: linear-gradient(135deg, #0b1747 70%, #00007b 100%);
+  border-radius: 12px;
+  padding: 28px 32px 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+}
+/* Wedge motif: diagonal accent strip */
+.op-header-preview::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 45%;
+  height: 100%;
+  background: rgba(37, 77, 235, .18);
+  clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+.op-header-preview-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 6px;
+}
+.op-header-preview-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+.op-header-meta-row {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.15);
+  padding-top: 16px;
+  margin-top: 4px;
+}
+.op-header-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 32px;
+  min-width: 120px;
+}
+.op-header-meta-field label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.5);
+}
+.op-header-meta-field input {
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.18);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: 'Inter', Arial, sans-serif;
+  color: #fff;
+  width: 140px;
+  transition: border-color .15s, background .15s;
+}
+.op-header-meta-field input::placeholder { color: rgba(255,255,255,.35); }
+.op-header-meta-field input:focus {
+  outline: none;
+  border-color: #3b7cff;
+  background: rgba(255,255,255,.14);
+}
+.op-header-meta-field input:read-only {
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.5);
+  cursor: default;
+}
+
+/* ── Status / action bar ────────────────────────────────────────────────── */
+.op-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.op-lock-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid;
+}
+.op-lock-badge.locked {
+  background: #fff7ed; border-color: #f59e0b; color: #b45309;
+}
+.op-lock-badge.unlocked {
+  background: #f0fdf4; border-color: #16a34a; color: #15803d;
+}
+.op-lock-btn {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all .15s;
+}
+.op-lock-btn.locked {
+  background: #fff7ed; border-color: #f59e0b; color: #b45309;
+}
+.op-lock-btn.locked:hover { background: #fef3c7; }
+.op-lock-btn.unlocked {
+  background: #f0fdf4; border-color: #16a34a; color: #15803d;
+}
+.op-lock-btn.unlocked:hover { background: #dcfce7; }
+
+.op-save-btn-primary {
+  margin-left: auto;
+  padding: 8px 20px;
+  background: #254deb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', Arial, sans-serif;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.op-save-btn-primary:hover { background: #18349e; }
+.op-save-btn-primary:disabled { opacity: .45; cursor: default; }
+
+.op-preview-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #254deb;
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1.5px solid #254deb;
+  border-radius: 7px;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.op-preview-link:hover { background: #eff3ff; }
+
+.op-save-status {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.op-save-status.ok  { color: #15803d; font-weight: 600; }
+.op-save-status.err { color: #c0392b; font-weight: 600; }
+
+/* ── Section groups (Core Purpose, Pinnacle, etc.) ─────────────────────── */
+.op-section-group {
+  margin-bottom: 20px;
+}
+.op-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0b1747;
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 18px;
+}
+.op-group-header-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.55);
+  flex: 1;
+}
+.op-group-header-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .01em;
+}
+.op-group-body {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 18px;
+}
+/* Flat card (no group header) for top-level single sections */
+.op-flat-section {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.op-flat-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px 10px;
+  border-bottom: 2px solid #254deb;
+  background: #f9fafb;
+}
+.op-flat-section-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b1747;
+  letter-spacing: .01em;
+}
+.op-flat-section-body {
+  padding: 14px 18px 16px;
+}
+.op-flat-section textarea {
+  width: 100%;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.6;
+  color: #111827;
+  background: #fff;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.op-flat-section textarea:focus {
+  outline: none;
+  border-color: #254deb;
+}
+.op-flat-section textarea:read-only {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: default;
+}
+
+/* ── Sub-section cards (Operating Model, Scorecard) ────────────────────── */
+.op-cards-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.op-cards-grid.two-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+.op-card {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-left: 3px solid #254deb;
+  border-radius: 7px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color .15s;
+}
+.op-card:hover { border-left-color: #0b1747; }
+.op-card.locked { background: #f3f4f6; }
+
+.op-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.op-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #0b1747;
+}
+.op-card textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.55;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.op-card textarea:focus {
+  outline: none;
+  border-color: #254deb;
+}
+.op-card textarea:read-only {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: default;
+}
+
+/* ── Comment button ─────────────────────────────────────────────────────── */
+.op-cmt-btn {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+  white-space: nowrap;
+}
+.op-cmt-btn:hover {
+  border-color: #254deb;
+  background: #eff3ff;
+  color: #254deb;
+}
+.op-cmt-btn.has-comments {
+  border-color: #254deb;
+  background: #eff3ff;
+  color: #254deb;
+}
+
+/* ── Bottom save row ────────────────────────────────────────────────────── */
+.op-bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0 48px;
+  border-top: 1.5px solid #e5e7eb;
+  margin-top: 8px;
+}
+
+/* ── Comment tray ───────────────────────────────────────────────────────── */
+.op-tray-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 23, 71, .3);
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s;
+}
+.op-tray-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.op-tray {
+  position: fixed;
+  top: 0; right: 0;
+  height: 100%;
+  width: min(440px, 100vw);
+  background: #fff;
+  box-shadow: -6px 0 32px rgba(11,23,71,.18);
+  z-index: 2001;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .26s cubic-bezier(.4,0,.2,1);
+}
+.op-tray.open { transform: translateX(0); }
+
+.op-tray-header {
+  background: linear-gradient(135deg, #0b1747 65%, #00007b 100%);
+  padding: 20px 20px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.op-tray-header::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 55%;
+  height: 100%;
+  background: rgba(37,77,235,.2);
+  clip-path: polygon(40% 0, 100% 0, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+.op-tray-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.5);
+  margin-bottom: 3px;
+  position: relative;
+}
+.op-tray-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  position: relative;
+}
+.op-tray-close {
+  background: rgba(255,255,255,.12);
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: rgba(255,255,255,.8);
+  padding: 5px 8px;
+  border-radius: 5px;
+  line-height: 1;
+  transition: background .15s;
+  position: relative;
+  flex-shrink: 0;
+}
+.op-tray-close:hover { background: rgba(255,255,255,.22); color: #fff; }
+
+.op-tray-comments {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f9fafb;
+}
+.op-tray-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13.5px;
+  padding: 40px 0;
+}
+.op-comment-bubble {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.op-comment-bubble.admin-resp {
+  background: #eff3ff;
+  border-color: #c7d7fd;
+  border-left: 3px solid #254deb;
+}
+.op-comment-author {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b1747;
+  margin-bottom: 4px;
+}
+.op-comment-author.cardwell { color: #254deb; }
+.op-comment-text {
+  font-size: 13.5px;
+  color: #374151;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.op-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  gap: 8px;
+}
+.op-comment-ts { font-size: 11px; color: #9ca3af; }
+.op-comment-actions { display: flex; gap: 6px; }
+.op-comment-edit-btn, .op-comment-del-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid;
+  font-family: 'Inter', Arial, sans-serif;
+  transition: all .12s;
+}
+.op-comment-edit-btn {
+  border-color: #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+.op-comment-edit-btn:hover { border-color: #6b7280; }
+.op-comment-del-btn {
+  border-color: #fca5a5;
+  background: #fff;
+  color: #b91c1c;
+}
+.op-comment-del-btn:hover { background: #fee2e2; }
+
+/* Inline edit area */
+.op-inline-edit { margin-top: 10px; }
+.op-inline-edit textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 7px 9px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', Arial, sans-serif;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.op-inline-edit textarea:focus {
+  outline: none;
+  border-color: #254deb;
+}
+.op-inline-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.op-tray-compose {
+  padding: 14px 18px 16px;
+  border-top: 1.5px solid #e5e7eb;
+  background: #fff;
+  flex-shrink: 0;
+}
+.op-tray-compose-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #0b1747;
+  margin-bottom: 8px;
+}
+.op-tray-compose textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1.5px solid #d1d5db;
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 13.5px;
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.op-tray-compose textarea:focus {
+  outline: none;
+  border-color: #254deb;
+}
+.op-tray-compose-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 9px;
+}
+.op-tray-post-btn {
+  padding: 8px 18px;
+  background: #254deb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', Arial, sans-serif;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.op-tray-post-btn:hover { background: #18349e; }
+.op-tray-post-btn:disabled { opacity: .45; cursor: default; }
+.op-tray-compose-status {
+  font-size: 12px;
+  color: #6b7280;
+}
+.op-tray-compose-status.err { color: #b91c1c; }
+.op-tray-compose-status.ok  { color: #15803d; font-weight: 600; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .op-cards-grid.two-col { grid-template-columns: 1fr; }
+  .op-header-meta-row { flex-direction: column; gap: 12px; }
+  .op-action-bar { flex-direction: column; align-items: flex-start; }
+  .op-save-btn-primary { margin-left: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -1206,6 +1833,7 @@
       <button class="view-nav-btn" id="nav-analysis" onclick="switchView('analysis')">Analysis</button>
       <button class="view-nav-btn" id="nav-deliverables" onclick="switchView('deliverables')">Deliverables</button>
       <button class="view-nav-btn" id="nav-leaderportal" onclick="switchView('leaderportal')">Leader Portal</button>
+      <button class="view-nav-btn" id="nav-onepage" onclick="switchView('onepage')">OnePage Builder</button>
     </div>
     <div class="topbar-badge" id="topbar-badge" style="display:none"></div>
   </div>
@@ -1678,6 +2306,224 @@
       </div>
     </div><!-- /view-leaderportal -->
 
+    <!-- ─────────── ONEPAGE BUILDER VIEW ─────────── -->
+    <div class="view" id="view-onepage">
+      <div class="toolbar">
+        <span class="toolbar-title">OnePage Builder</span>
+        <div class="toolbar-right">
+          <button class="btn-action btn-ghost-sm" onclick="enterOnePageBuilder()">&#8635; Refresh</button>
+        </div>
+      </div>
+
+      <!-- Project selector -->
+      <div class="op-project-panel">
+        <label for="op-project-sel">Project</label>
+        <select id="op-project-sel" onchange="onOPProjectChange()">
+          <option value="">-- select a project --</option>
+        </select>
+      </div>
+
+      <!-- Builder panel: hidden until project selected -->
+      <div id="op-builder-panel" style="display:none">
+
+        <!-- Action / status bar -->
+        <div class="op-action-bar">
+          <span id="op-lock-badge" class="op-lock-badge unlocked">Editable</span>
+          <button id="op-lock-toggle-btn" class="op-lock-btn unlocked" onclick="opToggleLock()">Lock OnePage</button>
+          <a id="op-preview-link" class="op-preview-link" target="_blank" rel="noopener" style="display:none">View Client Page &rarr;</a>
+          <button class="op-save-btn-primary" id="op-save-btn" onclick="opSave()">Save OnePage</button>
+          <span id="op-save-status" class="op-save-status"></span>
+        </div>
+
+        <!-- OnePage header preview: Cardwell navy card with meta fields -->
+        <div class="op-header-preview">
+          <div class="op-header-preview-eyebrow">OnePage Preview Header</div>
+          <div class="op-header-preview-title" id="op-header-client-name">Client Organization</div>
+          <div class="op-header-meta-row">
+            <div class="op-header-meta-field">
+              <label for="op-fiscal-year">Fiscal Year</label>
+              <input type="text" id="op-fiscal-year" placeholder="FY2025" maxlength="20">
+            </div>
+            <div class="op-header-meta-field">
+              <label for="op-issued-label">Issued</label>
+              <input type="text" id="op-issued-label" placeholder="June 2025" maxlength="30">
+            </div>
+            <div class="op-header-meta-field">
+              <label for="op-pinnacle-year">Pinnacle Year</label>
+              <input type="text" id="op-pinnacle-year" placeholder="2027" maxlength="10">
+            </div>
+          </div>
+        </div>
+
+        <!-- Core Purpose -->
+        <div class="op-flat-section">
+          <div class="op-flat-section-header">
+            <div class="op-flat-section-title">Core Purpose</div>
+            <button class="op-cmt-btn" id="opcmtbtn-corePurpose"
+              onclick="opOpenTray('corePurpose','Core Purpose')">Comments</button>
+          </div>
+          <div class="op-flat-section-body">
+            <textarea id="opcontent-corePurpose" rows="2"
+              placeholder="One outcome-based reason for being, ideally under 8 words. A yes/no guardrail."></textarea>
+          </div>
+        </div>
+
+        <!-- Pinnacle -->
+        <div class="op-flat-section">
+          <div class="op-flat-section-header">
+            <div class="op-flat-section-title">Pinnacle</div>
+            <button class="op-cmt-btn" id="opcmtbtn-pinnacle"
+              onclick="opOpenTray('pinnacle','Pinnacle')">Comments</button>
+          </div>
+          <div class="op-flat-section-body">
+            <textarea id="opcontent-pinnacle" rows="2"
+              placeholder="Measurable 24 to 36 month destination. A stretch with a finish line."></textarea>
+          </div>
+        </div>
+
+        <!-- Strategic Priorities -->
+        <div class="op-flat-section">
+          <div class="op-flat-section-header">
+            <div class="op-flat-section-title">Strategic Priorities</div>
+            <button class="op-cmt-btn" id="opcmtbtn-strategicPriorities"
+              onclick="opOpenTray('strategicPriorities','Strategic Priorities')">Comments</button>
+          </div>
+          <div class="op-flat-section-body">
+            <textarea id="opcontent-strategicPriorities" rows="5"
+              placeholder="3 to 4 concentration areas. Real trade-offs. At least one explicit stop."></textarea>
+          </div>
+        </div>
+
+        <!-- Operating Model -->
+        <div class="op-section-group">
+          <div class="op-group-header">
+            <div>
+              <div class="op-group-header-label">Section</div>
+              <div class="op-group-header-title">Operating Model</div>
+            </div>
+          </div>
+          <div class="op-group-body">
+            <div class="op-cards-grid two-col">
+
+              <div class="op-card" id="opcard-om_coreCustomer">
+                <div class="op-card-header">
+                  <div class="op-card-title">Core Customer</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-om_coreCustomer"
+                    onclick="opOpenTray('om_coreCustomer','Operating Model: Core Customer')">Comments</button>
+                </div>
+                <textarea id="opcontent-om_coreCustomer"
+                  placeholder="Who is the primary customer?"></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-om_productsServices">
+                <div class="op-card-header">
+                  <div class="op-card-title">Products and Services</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-om_productsServices"
+                    onclick="opOpenTray('om_productsServices','Operating Model: Products and Services')">Comments</button>
+                </div>
+                <textarea id="opcontent-om_productsServices"
+                  placeholder="What are the core offerings?"></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-om_channels">
+                <div class="op-card-header">
+                  <div class="op-card-title">Channels</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-om_channels"
+                    onclick="opOpenTray('om_channels','Operating Model: Channels')">Comments</button>
+                </div>
+                <textarea id="opcontent-om_channels"
+                  placeholder="How do we reach and serve the customer?"></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-om_valueProposition">
+                <div class="op-card-header">
+                  <div class="op-card-title">Value Proposition</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-om_valueProposition"
+                    onclick="opOpenTray('om_valueProposition','Operating Model: Value Proposition')">Comments</button>
+                </div>
+                <textarea id="opcontent-om_valueProposition"
+                  placeholder="What unique value is delivered?"></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-om_capacityFunding">
+                <div class="op-card-header">
+                  <div class="op-card-title">Capacity and Funding</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-om_capacityFunding"
+                    onclick="opOpenTray('om_capacityFunding','Operating Model: Capacity and Funding')">Comments</button>
+                </div>
+                <textarea id="opcontent-om_capacityFunding"
+                  placeholder="Resources and funding model that sustain the work."></textarea>
+              </div>
+
+            </div>
+          </div>
+        </div><!-- /operating model -->
+
+        <!-- Scorecard -->
+        <div class="op-section-group">
+          <div class="op-group-header">
+            <div>
+              <div class="op-group-header-label">Section</div>
+              <div class="op-group-header-title">Scorecard</div>
+            </div>
+          </div>
+          <div class="op-group-body">
+            <div class="op-cards-grid two-col">
+
+              <div class="op-card" id="opcard-sc_financial">
+                <div class="op-card-header">
+                  <div class="op-card-title">Financial</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-sc_financial"
+                    onclick="opOpenTray('sc_financial','Scorecard: Financial')">Comments</button>
+                </div>
+                <textarea id="opcontent-sc_financial"
+                  placeholder="Financial measures and targets."></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-sc_people">
+                <div class="op-card-header">
+                  <div class="op-card-title">People</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-sc_people"
+                    onclick="opOpenTray('sc_people','Scorecard: People')">Comments</button>
+                </div>
+                <textarea id="opcontent-sc_people"
+                  placeholder="People and team measures."></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-sc_productsServices">
+                <div class="op-card-header">
+                  <div class="op-card-title">Products and Services</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-sc_productsServices"
+                    onclick="opOpenTray('sc_productsServices','Scorecard: Products and Services')">Comments</button>
+                </div>
+                <textarea id="opcontent-sc_productsServices"
+                  placeholder="Product and service quality measures."></textarea>
+              </div>
+
+              <div class="op-card" id="opcard-sc_customerImpact">
+                <div class="op-card-header">
+                  <div class="op-card-title">Customer and Impact</div>
+                  <button class="op-cmt-btn" id="opcmtbtn-sc_customerImpact"
+                    onclick="opOpenTray('sc_customerImpact','Scorecard: Customer and Impact')">Comments</button>
+                </div>
+                <textarea id="opcontent-sc_customerImpact"
+                  placeholder="Customer experience and impact measures."></textarea>
+              </div>
+
+            </div>
+          </div>
+        </div><!-- /scorecard -->
+
+        <!-- Bottom bar -->
+        <div class="op-bottom-bar">
+          <button class="op-save-btn-primary" onclick="opSave()">Save OnePage</button>
+          <span id="op-save-status-bottom" class="op-save-status"></span>
+        </div>
+
+      </div><!-- /op-builder-panel -->
+    </div><!-- /view-onepage -->
+
+
   </div>
 </div>
 
@@ -1741,6 +2587,33 @@
     </div>
   </div>
 </div>
+
+<div class="op-tray-overlay" id="op-tray-overlay" onclick="opCloseTray()"></div>
+<div class="op-tray" id="op-tray">
+
+  <div class="op-tray-header">
+    <div>
+      <div class="op-tray-section-label" id="op-tray-section-label">Section</div>
+      <div class="op-tray-title" id="op-tray-title">Comments</div>
+    </div>
+    <button class="op-tray-close" onclick="opCloseTray()">&#10005;</button>
+  </div>
+
+  <div class="op-tray-comments" id="op-tray-comments">
+    <div class="op-tray-empty">No comments yet for this section.</div>
+  </div>
+
+  <div class="op-tray-compose">
+    <div class="op-tray-compose-label">Post a Cardwell Response</div>
+    <textarea id="op-tray-input" placeholder="Write a response visible to the client team..." rows="3"></textarea>
+    <div class="op-tray-compose-row">
+      <button class="op-tray-post-btn" id="op-tray-post-btn" onclick="opPostAdminResponse()">Post Response</button>
+      <span class="op-tray-compose-status" id="op-tray-compose-status"></span>
+    </div>
+  </div>
+
+</div>
+
 
 <script>
 // ── Question metadata + facilitator framing ───────────────────────────────────
@@ -1969,7 +2842,7 @@ function logout() {
 // ── View switching ─────────────────────────────────────────────────────────────
 function switchView(view) {
   currentView = view;
-  ['responses','analysis','projects','deliverables','leaderportal'].forEach(function(v){
+  ['responses','analysis','projects','deliverables','leaderportal','onepage'].forEach(function(v){
     var vw = document.getElementById('view-' + v); if (vw) vw.classList.toggle('active', view === v);
     var nv = document.getElementById('nav-' + v); if (nv) nv.classList.toggle('active', view === v);
   });
@@ -1977,6 +2850,7 @@ function switchView(view) {
   if (view === 'projects') loadProjects();
   if (view === 'deliverables') enterDeliverables();
   if (view === 'leaderportal') enterLeaderPortal();
+  if (view === 'onepage') enterOnePageBuilder();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -5676,6 +6550,510 @@ function unpublishLeaderPortal() {
 }
 
 // Print styling: only the report card prints when in analysis view
+
+// ══════════════════════════════════════════════════════════════════════════
+// ONEPAGE BUILDER — Admin Manager (v2)
+// ══════════════════════════════════════════════════════════════════════════
+
+var OP_SECTION_KEYS = [
+  'corePurpose',
+  'pinnacle',
+  'strategicPriorities',
+  'om_coreCustomer',
+  'om_productsServices',
+  'om_channels',
+  'om_valueProposition',
+  'om_capacityFunding',
+  'sc_financial',
+  'sc_people',
+  'sc_productsServices',
+  'sc_customerImpact'
+];
+
+var OP_SECTION_LABELS = {
+  corePurpose:           'Core Purpose',
+  pinnacle:              'Pinnacle',
+  strategicPriorities:   'Strategic Priorities',
+  om_coreCustomer:       'Operating Model: Core Customer',
+  om_productsServices:   'Operating Model: Products and Services',
+  om_channels:           'Operating Model: Channels',
+  om_valueProposition:   'Operating Model: Value Proposition',
+  om_capacityFunding:    'Operating Model: Capacity and Funding',
+  sc_financial:          'Scorecard: Financial',
+  sc_people:             'Scorecard: People',
+  sc_productsServices:   'Scorecard: Products and Services',
+  sc_customerImpact:     'Scorecard: Customer and Impact'
+};
+
+// State
+var opCurrentSlug      = null;
+var opIsLocked         = false;
+var opTraySection      = null;
+var opAllComments      = [];
+var opEditingCommentId = null;
+
+// Entry
+
+function enterOnePageBuilder() {
+  fetch(ENDPOINT_URL + '?action=listProjects&token=' + encodeURIComponent(projToken()))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) allProjects = j.projects || [];
+      buildOPProjectDropdown();
+      var sel = document.getElementById('op-project-sel');
+      if (sel && sel.value) onOPProjectChange();
+    })
+    .catch(function(){ buildOPProjectDropdown(); });
+}
+
+function buildOPProjectDropdown() {
+  var sel = document.getElementById('op-project-sel');
+  if (!sel) return;
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">-- select a project --</option>';
+  (allProjects || []).forEach(function(p){
+    var opt = document.createElement('option');
+    opt.value = p.slug;
+    opt.textContent = p.projectName || p.clientName || p.slug;
+    if (p.slug === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function onOPProjectChange() {
+  var slug = (document.getElementById('op-project-sel').value || '').trim();
+  if (!slug) {
+    document.getElementById('op-builder-panel').style.display = 'none';
+    opCurrentSlug = null;
+    return;
+  }
+  opCurrentSlug = slug;
+  opLoadRecord(slug);
+}
+
+// Load record
+
+function opLoadRecord(slug) {
+  document.getElementById('op-builder-panel').style.display = 'none';
+  fetch(ENDPOINT_URL + '?action=getOnePage&slug=' + encodeURIComponent(slug))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      opPopulateBuilder(j.success && j.record ? j.record : null);
+    })
+    .catch(function(){ opPopulateBuilder(null); });
+}
+
+function opPopulateBuilder(record) {
+  var sections = (record && record.sections) ? record.sections : {};
+  var meta     = record || {};
+
+  // Header: show client name from loaded projects store
+  var proj = (allProjects || []).find(function(p){ return p.slug === opCurrentSlug; }) || {};
+  var clientLabel = proj.clientName || proj.projectName || opCurrentSlug || 'Client Organization';
+  var clientNameEl = document.getElementById('op-header-client-name');
+  if (clientNameEl) clientNameEl.textContent = clientLabel;
+
+  // Meta fields
+  opSetVal('op-fiscal-year',   meta.fiscalYear   || '');
+  opSetVal('op-issued-label',  meta.issuedLabel  || '');
+  opSetVal('op-pinnacle-year', meta.pinnacleYear || '');
+
+  // Section content
+  OP_SECTION_KEYS.forEach(function(key){
+    var ta = document.getElementById('opcontent-' + key);
+    if (ta) ta.value = sections[key] || '';
+  });
+
+  // Lock state
+  opIsLocked = !!(record && record.finalized);
+  opApplyLockState();
+
+  // Preview link
+  var link = document.getElementById('op-preview-link');
+  if (link && opCurrentSlug) {
+    link.href = '/onepage/' + opCurrentSlug;
+    link.style.display = '';
+  }
+
+  // Comments
+  opLoadCommentCounts();
+
+  document.getElementById('op-builder-panel').style.display = 'block';
+  opSetSaveStatus('', '');
+}
+
+function opSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// Lock / Unlock
+
+function opApplyLockState() {
+  var lockBtn  = document.getElementById('op-lock-toggle-btn');
+  var badge    = document.getElementById('op-lock-badge');
+  var saveBtn  = document.getElementById('op-save-btn');
+
+  if (opIsLocked) {
+    if (lockBtn)  { lockBtn.textContent = 'Unlock OnePage'; lockBtn.className = 'op-lock-btn locked'; }
+    if (badge)    { badge.textContent = 'Locked'; badge.className = 'op-lock-badge locked'; }
+    if (saveBtn)  saveBtn.disabled = true;
+  } else {
+    if (lockBtn)  { lockBtn.textContent = 'Lock OnePage'; lockBtn.className = 'op-lock-btn unlocked'; }
+    if (badge)    { badge.textContent = 'Editable'; badge.className = 'op-lock-badge unlocked'; }
+    if (saveBtn)  saveBtn.disabled = false;
+  }
+
+  // Freeze/unfreeze all textareas and meta inputs
+  OP_SECTION_KEYS.forEach(function(key){
+    var ta = document.getElementById('opcontent-' + key);
+    if (ta) ta.readOnly = opIsLocked;
+  });
+  ['op-fiscal-year','op-issued-label','op-pinnacle-year'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.readOnly = opIsLocked;
+  });
+}
+
+function opToggleLock() {
+  if (!opCurrentSlug) return;
+  var btn = document.getElementById('op-lock-toggle-btn');
+  if (btn) btn.disabled = true;
+
+  var newLocked = !opIsLocked;
+  var payload = {
+    type: 'setOnePageLock',
+    token: projToken(),
+    slug: opCurrentSlug,
+    finalized: newLocked
+  };
+
+  fetch(ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (btn) btn.disabled = false;
+      if (j.success) {
+        opIsLocked = newLocked;
+        opApplyLockState();
+        opSetSaveStatus(opIsLocked ? 'OnePage locked.' : 'OnePage unlocked.', 'ok');
+      } else {
+        opSetSaveStatus('Could not change lock: ' + (j.error || ''), 'err');
+      }
+    })
+    .catch(function(e){
+      if (btn) btn.disabled = false;
+      opSetSaveStatus('Error: ' + e.message, 'err');
+    });
+}
+
+// Save
+
+function opSave() {
+  if (!opCurrentSlug) return;
+  if (opIsLocked) { opSetSaveStatus('Unlock before saving.', 'err'); return; }
+
+  var sections = {};
+  OP_SECTION_KEYS.forEach(function(key){
+    var ta = document.getElementById('opcontent-' + key);
+    sections[key] = ta ? ta.value.trim() : '';
+  });
+
+  var payload = {
+    type: 'saveOnePage',
+    token: projToken(),
+    slug: opCurrentSlug,
+    fiscalYear:   (document.getElementById('op-fiscal-year').value   || '').trim(),
+    issuedLabel:  (document.getElementById('op-issued-label').value  || '').trim(),
+    pinnacleYear: (document.getElementById('op-pinnacle-year').value || '').trim(),
+    sections: sections
+  };
+
+  var btn = document.getElementById('op-save-btn');
+  if (btn) btn.disabled = true;
+  opSetSaveStatus('Saving...', '');
+
+  fetch(ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (btn) btn.disabled = false;
+      if (j.success) {
+        var ts = 'Saved at ' + fmtTime(new Date());
+        opSetSaveStatus(ts, 'ok');
+        var bot = document.getElementById('op-save-status-bottom');
+        if (bot) { bot.textContent = ts; bot.className = 'op-save-status ok'; }
+      } else {
+        opSetSaveStatus('Save failed: ' + (j.error || ''), 'err');
+      }
+    })
+    .catch(function(e){
+      if (btn) btn.disabled = false;
+      opSetSaveStatus('Error: ' + e.message, 'err');
+    });
+}
+
+function opSetSaveStatus(msg, type) {
+  var el = document.getElementById('op-save-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'op-save-status' + (type ? ' ' + type : '');
+}
+
+// Comment counts
+
+function opLoadCommentCounts() {
+  if (!opCurrentSlug) return;
+  fetch(ENDPOINT_URL + '?action=getOnePageComments&slug=' + encodeURIComponent(opCurrentSlug))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) {
+        opAllComments = j.comments || [];
+        opUpdateAllCommentBtns();
+        if (opTraySection) opRenderTrayComments(opTraySection);
+      }
+    })
+    .catch(function(){});
+}
+
+function opUpdateAllCommentBtns() {
+  OP_SECTION_KEYS.forEach(function(key){
+    var btn = document.getElementById('opcmtbtn-' + key);
+    if (!btn) return;
+    var cnt = opAllComments.filter(function(c){ return c.sectionKey === key; }).length;
+    btn.textContent = cnt > 0 ? 'Comments (' + cnt + ')' : 'Comments';
+    btn.className   = cnt > 0 ? 'op-cmt-btn has-comments' : 'op-cmt-btn';
+  });
+}
+
+// Comment tray
+
+function opOpenTray(sectionKey, sectionLabel) {
+  opTraySection      = sectionKey;
+  opEditingCommentId = null;
+
+  var labelEl = document.getElementById('op-tray-section-label');
+  var titleEl = document.getElementById('op-tray-title');
+  if (labelEl) labelEl.textContent = 'Section';
+  if (titleEl) titleEl.textContent = sectionLabel || OP_SECTION_LABELS[sectionKey] || sectionKey;
+
+  opRenderTrayComments(sectionKey);
+
+  var ta = document.getElementById('op-tray-input');
+  if (ta) ta.value = '';
+  opSetTrayStatus('', '');
+
+  document.getElementById('op-tray-overlay').classList.add('open');
+  document.getElementById('op-tray').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function opCloseTray() {
+  document.getElementById('op-tray-overlay').classList.remove('open');
+  document.getElementById('op-tray').classList.remove('open');
+  document.body.style.overflow = '';
+  opTraySection      = null;
+  opEditingCommentId = null;
+}
+
+function opRenderTrayComments(sectionKey) {
+  var container = document.getElementById('op-tray-comments');
+  if (!container) return;
+
+  var comments = opAllComments
+    .filter(function(c){ return c.sectionKey === sectionKey; })
+    .sort(function(a,b){ return new Date(a.createdAt) - new Date(b.createdAt); });
+
+  if (!comments.length) {
+    container.innerHTML = '<div class="op-tray-empty">No comments yet for this section.</div>';
+    return;
+  }
+
+  var html = '';
+  comments.forEach(function(c){
+    var isAdmin = String(c.isAdminResponse) === 'true' || c.isAdminResponse === true;
+    var author  = isAdmin
+      ? 'Cardwell'
+      : esc(c.firstName || '') + (c.lastName ? ' ' + esc(c.lastName) : '');
+    var ts = c.editedAt ? opFmtTs(c.editedAt) + ' (edited)' : opFmtTs(c.createdAt);
+
+    html += '<div class="op-comment-bubble' + (isAdmin ? ' admin-resp' : '') + '">';
+    html += '<div class="op-comment-author' + (isAdmin ? ' cardwell' : '') + '">' + author + '</div>';
+    html += '<div class="op-comment-text">' + esc(c.text) + '</div>';
+    html += '<div class="op-comment-meta">';
+    html += '<span class="op-comment-ts">' + ts + '</span>';
+    html += '<span class="op-comment-actions">';
+    if (isAdmin) {
+      html += '<button class="op-comment-edit-btn" onclick="opStartEditComment(\'' + esc(c.commentId) + '\')">Edit</button>';
+    }
+    html += '<button class="op-comment-del-btn" onclick="opDeleteComment(\'' + esc(c.commentId) + '\')">Delete</button>';
+    html += '</span></div>';
+
+    // Inline edit area
+    html += '<div class="op-inline-edit" id="opcmt-edit-' + esc(c.commentId) + '" style="display:none">';
+    html += '<textarea id="opcmt-edit-ta-' + esc(c.commentId) + '">' + esc(c.text) + '</textarea>';
+    html += '<div class="op-inline-edit-actions">';
+    html += '<button class="op-tray-post-btn" style="padding:5px 12px;font-size:12px" onclick="opSaveEditComment(\'' + esc(c.commentId) + '\')">Save</button>';
+    html += '<button class="op-comment-edit-btn" onclick="opCancelEditComment(\'' + esc(c.commentId) + '\')">Cancel</button>';
+    html += '</div></div>';
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function opFmtTs(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  if (isNaN(d)) return ts;
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) +
+    ', ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+}
+
+// Post admin response
+
+function opPostAdminResponse() {
+  var ta   = document.getElementById('op-tray-input');
+  var text = (ta ? ta.value : '').trim();
+  if (!text) { opSetTrayStatus('Enter a response before posting.', 'err'); return; }
+  if (!opCurrentSlug || !opTraySection) return;
+
+  var btn = document.getElementById('op-tray-post-btn');
+  if (btn) btn.disabled = true;
+  opSetTrayStatus('Posting...', '');
+
+  var payload = {
+    type: 'saveOnePageAdminResponse',
+    token: projToken(),
+    slug: opCurrentSlug,
+    sectionKey: opTraySection,
+    text: text
+  };
+
+  fetch(ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (btn) btn.disabled = false;
+      if (j.success && j.comment) {
+        opAllComments.push(j.comment);
+        if (ta) ta.value = '';
+        opRenderTrayComments(opTraySection);
+        opUpdateAllCommentBtns();
+        opSetTrayStatus('Response posted.', 'ok');
+      } else {
+        opSetTrayStatus('Failed: ' + (j.error || ''), 'err');
+      }
+    })
+    .catch(function(e){
+      if (btn) btn.disabled = false;
+      opSetTrayStatus('Error: ' + e.message, 'err');
+    });
+}
+
+// Edit admin response
+
+function opStartEditComment(id) {
+  if (opEditingCommentId && opEditingCommentId !== id) opCancelEditComment(opEditingCommentId);
+  opEditingCommentId = id;
+  var div = document.getElementById('opcmt-edit-' + id);
+  if (div) div.style.display = 'block';
+}
+
+function opCancelEditComment(id) {
+  var div = document.getElementById('opcmt-edit-' + id);
+  if (div) div.style.display = 'none';
+  if (opEditingCommentId === id) opEditingCommentId = null;
+}
+
+function opSaveEditComment(id) {
+  var ta   = document.getElementById('opcmt-edit-ta-' + id);
+  var text = (ta ? ta.value : '').trim();
+  if (!text) { opSetTrayStatus('Text cannot be empty.', 'err'); return; }
+
+  opSetTrayStatus('Saving...', '');
+
+  var payload = {
+    type: 'editOnePageAdminResponse',
+    token: projToken(),
+    commentId: id,
+    slug: opCurrentSlug,
+    text: text
+  };
+
+  fetch(ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success && j.comment) {
+        for (var i = 0; i < opAllComments.length; i++) {
+          if (opAllComments[i].commentId === id) { opAllComments[i] = j.comment; break; }
+        }
+        opEditingCommentId = null;
+        opRenderTrayComments(opTraySection);
+        opSetTrayStatus('Comment updated.', 'ok');
+      } else {
+        opSetTrayStatus('Failed: ' + (j.error || ''), 'err');
+      }
+    })
+    .catch(function(e){ opSetTrayStatus('Error: ' + e.message, 'err'); });
+}
+
+// Delete comment
+
+function opDeleteComment(id) {
+  if (!confirm('Delete this comment? This cannot be undone.')) return;
+  opSetTrayStatus('Deleting...', '');
+
+  var payload = {
+    type: 'deleteOnePageComment',
+    token: projToken(),
+    commentId: id,
+    slug: opCurrentSlug
+  };
+
+  fetch(ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.success) {
+        opAllComments = opAllComments.filter(function(c){ return c.commentId !== id; });
+        opRenderTrayComments(opTraySection);
+        opUpdateAllCommentBtns();
+        opSetTrayStatus('Comment deleted.', 'ok');
+      } else {
+        opSetTrayStatus('Failed: ' + (j.error || ''), 'err');
+      }
+    })
+    .catch(function(e){ opSetTrayStatus('Error: ' + e.message, 'err'); });
+}
+
+function opSetTrayStatus(msg, type) {
+  var el = document.getElementById('op-tray-compose-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'op-tray-compose-status' + (type ? ' ' + type : '');
+}
+
+// End OnePage Builder v2
+
 var ps = document.createElement('style');
 ps.media = 'print';
 ps.textContent = '.topbar,.toolbar,.sticky-side,.report-toolbar,#view-responses{display:none!important}' +
